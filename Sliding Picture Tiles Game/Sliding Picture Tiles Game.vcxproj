@@ -162,6 +162,8 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Surface.h" />
     <ClInclude Include="Testing.h" />
+    <ClInclude Include="TextureVertex.h" />
+    <ClInclude Include="Tile.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Vector.h" />
   </ItemGroup>

@@ -26,15 +26,19 @@ namespace Math
 		Vector& operator += ( const Vector& RHS );
 		Vector& operator -= ( const Vector& RHS );
 		Vector& operator *= ( const float& RHS );
-		Vector	operator *  ( const float& RHS ) const;
 		Vector& operator /= ( const float& RHS );
+		Vector	operator *  ( const float& RHS ) const;
+		Vector  operator /  ( const float& RHS ) const;
+
 		bool 	operator == ( const Vector& RHS ) const;
 		bool	operator != ( const Vector& RHS ) const;
 
 		float	DotProduct( const Vector& RHS ) const;
 		Vector	CrossProduct( const Vector& RHS ) const;
 		float	Length() const;
-		Vector& Normalise();
+		Vector& Normalize();
+		Vector  GetNormalized() const;
+		Vector	Interpolate(const Vector& RHS, const float& alpha);
 
 	public:
 		float x = 0.0f;
@@ -44,6 +48,11 @@ namespace Math
 	};
 
 	// MATH FUNCTIONS
+
+	static	Vector operator * (const float& LHS, const Vector& RHS)
+	{
+		return RHS * LHS;
+	}
 	static	Vector	Add( const Vector& A, const Vector& B )
 	{
 		return { A.x + B.x, A.y + B.y, A.z + B.z };
@@ -86,41 +95,16 @@ namespace Math
 
 		return result;
 	}
-	static	Vector	Normalise( const Vector& V )
+	static	Vector	Normalize( const Vector& V )
 	{
-		Vector result;
-		float length = Length( V );
-
-		//assert( length != 0.0f );
-		if( length == 0.0f )
-		{
-			result.x = 0.0f;
-			result.y = 0.0f;
-		}
-		else if( length < 1.0f )
-		{
-			result.x = V.x + V.x * ( 1.0f - length );
-			result.y = V.y + V.y * ( 1.0f - length );
-			result.z = V.z + V.z * ( 1.0f - length );
-
-			assert( Length( result ) < 1.000001f );
-			assert( Length( result ) > 0.999999f );
-		}
-		else
-		{
-			result.x = V.x / length;
-			result.y = V.y / length;
-			result.z = V.z / length;
-
-			assert( Length( result ) < 1.000001f );
-			assert( Length( result ) > 0.999999f );
-		}
-
-		return result;
+		return V.GetNormalized();
 	}
 	static	Vector	Interpolate( const Vector& SOURCE, const Vector& DESTINATION, const float& ALPHA )
 	{
-		return SOURCE + Multiply( ( DESTINATION - SOURCE ), ALPHA );
+		assert(ALPHA >= 0.0f);
+		assert(ALPHA <= 1.0f);
+		return (1.0f - ALPHA) * SOURCE + ALPHA * DESTINATION;
+		//return SOURCE + ( DESTINATION - SOURCE ) * ALPHA;
 	}
 	static	Vector	Rotate90CCW( const Vector& V )
 	{

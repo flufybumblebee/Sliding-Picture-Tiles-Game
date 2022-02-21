@@ -26,6 +26,7 @@
 #include "GDIPlusManager.h"
 #include "Surface.h"
 #include "Math.h"
+#include "Tile.h"
 
 class Graphics
 {
@@ -168,14 +169,11 @@ public:
 		}
 	}
 
-	// TRIANGLE	
-	void DrawTriangle(const bool& FILLED, const Math::Vector& A, const Math::Vector& B, const Math::Vector& C, const Color& COLOR );
-	void DrawTriangle( const bool& FILLED, const Math::Triangle& T, const Color& COLOR )
-	{
-		DrawTriangle( FILLED, T.GetA(), T.GetB(), T.GetC(), COLOR );
-	}
+	
 
 	// SPECIAL
+
+	void DrawTile(const Tile& T, const Surface& IMAGE);
 	void DrawVector( const Math::Vector& V, const Color& COLOR );
 	void DrawVector( const Math::Vector& A, const Math::Vector& B, const Color& COLOR );
 
@@ -206,13 +204,28 @@ public:
 	{
 		DrawImage( ALPHA, V.x, V.y, S );
 	}
-
+	
+	// TRIANGLE	
+	void DrawTriangle(const bool& FILLED, const Math::Vector& A, const Math::Vector& B, const Math::Vector& C, const Color& COLOR );
+	void DrawTriangle( const bool& FILLED, const Math::Triangle& T, const Color& COLOR )
+	{
+		DrawTriangle( FILLED, T.GetA(), T.GetB(), T.GetC(), COLOR );
+	}
+	void DrawTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex);
 private:
 	void DrawTriangle( const Math::Vector& A, const Math::Vector& B, const Math::Vector& C, const Color& COLOR );
 	void DrawFlatTopTriangle( const Math::Vector& it0, const Math::Vector& it1,	const Math::Vector& it2, const Color& COLOR );
 	void DrawFlatBottomTriangle( const Math::Vector& it0, const Math::Vector& it1, const Math::Vector& it2, const Color& COLOR );
 	void DrawFlatTriangle( const Math::Vector& it0, const Math::Vector& it1, const Math::Vector& it2, const Math::Vector& dv0, const Math::Vector& dv1, Math::Vector itEdge1, const Color& COLOR );
-
+	//void DrawTriangle(const Math::Vector& v0, const Math::Vector& v1, const Math::Vector& v2, Color c);
+	//void DrawFlatTopTriangle(const Math::Vector& v0, const Math::Vector& v1, const Math::Vector& v2, Color c);
+	//void DrawFlatBottomTriangle(const Math::Vector& v0, const Math::Vector& v1, const Math::Vector& v2, Color c);
+	
+public:
+	void DrawFlatTopTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex);
+	void DrawFlatBottomTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex);
+	void DrawFlatTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex,
+		const Math::TextureVertex& dv0, const Math::TextureVertex& dv1, Math::TextureVertex& itEdge1);
 private:
 	GDIPlusManager										gdipMan;
 	Microsoft::WRL::ComPtr<IDXGISwapChain>				pSwapChain;

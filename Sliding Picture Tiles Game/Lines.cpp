@@ -112,12 +112,12 @@ void    LineSegment::SetNormal()
 {
     if(isLineSet)
     {
-        this->normal = Rotate90CCW( Normalise( line ) );
+        this->normal = Rotate90CCW( Normalize( line ) );
     }
     else
     {
         SetLine();
-        this->normal = Rotate90CCW( Normalise( line ) );
+        this->normal = Rotate90CCW( Normalize( line ) );
     }
 
     isNormalSet = true;

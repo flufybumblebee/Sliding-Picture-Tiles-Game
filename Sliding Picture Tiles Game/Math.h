@@ -5,6 +5,7 @@
 #include "Matrix.h"		// Matrix
 #include "Lines.h"		// LineSegment, (Todo: Ray, Line)
 #include "Geometry.h"	// Rect, AABB, Circle, Triangle
+#include "TextureVertex.h"
 
 #include <cmath>		// sqrt
 #include <algorithm>	// move, min, max
@@ -137,15 +138,15 @@ namespace Math
 
 	static	Vector	ClosestPoint( const class LineSegment& LS, const class Vector& V )
 	{
-		const Vector HYP = Subtract( V, LS.a );
-		const Vector ADJ = Subtract( LS.b, LS.a );
+		const Vector HYP = V - LS.a;
+		const Vector ADJ = LS.b - LS.a;
+		const Vector ADJ_NORMALIZED = Normalize( ADJ );
 
-		const Vector ADJ_NORMALISED = Normalise( ADJ );
-		const float HYP_LENGTH = Length( HYP );
-		const float ADJ_LENGTH = DotProduct( ADJ_NORMALISED, HYP );
-		const float OPP_LENGTH = sqrt( Square( HYP_LENGTH ) - Square( ADJ_LENGTH ) );
+		const float	HYP_LENGTH = Length( HYP );
+		const float ADJ_LENGTH = DotProduct( ADJ_NORMALIZED, HYP );
+		//const float OPP_LENGTH = sqrt( Square( HYP_LENGTH ) - Square( ADJ_LENGTH ) );
 
-		return Add( LS.a, Multiply( ADJ_NORMALISED, ADJ_LENGTH ) );
+		return LS.a + ADJ_NORMALIZED * ADJ_LENGTH;
 	}
 
 	//static	Vector	Intersection( const LineSegment& A, const LineSegment& B )

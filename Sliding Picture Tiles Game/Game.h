@@ -27,10 +27,13 @@
 #include "Surface.h"
 
 #include "Math.h"
+#include "Tile.h"
 
 #include <array>
 #include <vector>
 #include <string>
+#include <list>
+#include <queue>
 
 class Game
 {
@@ -47,18 +50,56 @@ private:
 	Graphics gfx;
 
 public:
-	Surface image;
-	std::vector<int> nums;
-	int cursor = 0;
-	bool keyPressed = false;
-	bool gameOver = false;
+	
+	int		imageNum		= 0;
+	int		cursor			= 0;
+	bool	arrowPressed	= false;
+	bool	spacePressed	= false;
+	bool	returnPressed	= false;
+	bool	keyPressed		= false;
+	bool	gameOver		= false;
+	bool	isMoving		= false;
+			
+	std::vector<Surface> images;
+
+	Timer timer;
+	float frameTime	= 0.0f;
+	float timeOld	= 0.0f;
+	float timeNew	= 0.0f;
+
+	const int XOFF		= 50;
+	const int YOFF		= 50;
+	const int ROWS		= 5;
+	const int COLS		= 5;
+	const int SIZE		= ROWS * COLS;
+	const int WIDTH		= (Graphics::WINDOW_HEIGHT - YOFF * 2) / ROWS;
+	const int HEIGHT	= WIDTH;
+
+	const float XFRACTION = 1.0f / COLS;
+	const float YFRACTION = 1.0f / ROWS;
+
+	std::vector<std::array<Math::Vector, 4>> positions;
+	std::vector<std::array<Math::Vector, 4>> texCoords;
+
+	std::vector <Tile> tiles;
 
 public:
+	void SetTiles();
+	void SetImages();
+	void SetTextureCoordinates();
+	void SetPositions();
+	void GetFrameTime();
+	void SetTileImage();
 	void RandomiseTiles();
-	void DrawImageSection(
-		const int X,
-		const int Y,
-		const int I);
+	void SetAdjacents();
+
+	void CheckForGameOver();
+	void MoveCursor();
+	void MoveTile();
+	void ResetTiles();
+
 	void DrawTiles();
 	void DrawCursor();
+
+	void CloseGame();
 };

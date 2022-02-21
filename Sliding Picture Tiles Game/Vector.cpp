@@ -47,25 +47,19 @@ Vector& Vector::operator= ( const Vector& RHS )
 }
 Vector  Vector::operator+ ( const Vector& RHS ) const
 {
-    Vector result;
-
-    result.x = this->x + RHS.x;
-    result.y = this->y + RHS.y;
-    result.z = this->z + RHS.z;
-    result.w = this->w + RHS.w;
-
-    return result;
+    return Vector(*this) += RHS;
+}
+Vector  Vector::operator* ( const float& RHS ) const
+{
+    return Vector(*this) *= RHS;
+}
+Vector  Vector::operator/ ( const float& RHS ) const
+{
+    return Vector(*this) /= RHS;
 }
 Vector  Vector::operator- ( const Vector& RHS ) const
 {
-    Vector result;
-
-    result.x = this->x - RHS.x;
-    result.y = this->y - RHS.y;
-    result.z = this->z - RHS.z;
-    result.w = this->w - RHS.w;
-
-    return result;
+    return Vector(*this) -= RHS;
 }
 Vector& Vector::operator+=( const Vector& RHS )
 {
@@ -78,10 +72,10 @@ Vector& Vector::operator+=( const Vector& RHS )
 }
 Vector& Vector::operator-=( const Vector& RHS )
 {
-    this->x += RHS.x;
-    this->y += RHS.y;
-    this->z += RHS.z;
-    this->w += RHS.w;
+    this->x -= RHS.x;
+    this->y -= RHS.y;
+    this->z -= RHS.z;
+    this->w -= RHS.w;
 
     return *this;
 }
@@ -94,17 +88,6 @@ Vector& Vector::operator*=( const float& RHS )
 
     return *this;
 }
-Vector  Vector::operator* ( const float& RHS ) const
-{
-    Vector result = *this;
-
-    result.x *= RHS;
-    result.y *= RHS;
-    result.z *= RHS;
-    result.w *= RHS;
-
-    return result;
-}
 Vector& Vector::operator/=( const float& RHS )
 {
     this->x /= RHS;
@@ -114,6 +97,7 @@ Vector& Vector::operator/=( const float& RHS )
 
     return *this;
 }
+
 bool    Vector::operator==( const Vector& RHS ) const
 {
     return (
@@ -122,7 +106,6 @@ bool    Vector::operator==( const Vector& RHS ) const
         this->z == RHS.z &&
         this->w == RHS.w);
 }
-
 bool    Vector::operator!=( const Vector& RHS ) const
 {
     return (
@@ -136,7 +119,7 @@ float   Vector::DotProduct( const Vector& RHS ) const
 {
     return this->x * RHS.x + this->y * RHS.y;
 }
-Vector& Vector::Normalise()
+Vector& Vector::Normalize()
 {
     float length = this->Length();
 
@@ -145,6 +128,10 @@ Vector& Vector::Normalise()
     this->z /= length;
 
     return *this;
+}
+Vector  Vector::GetNormalized() const
+{
+    return Vector(*this).Normalize();
 }
 float   Vector::Length() const
 {

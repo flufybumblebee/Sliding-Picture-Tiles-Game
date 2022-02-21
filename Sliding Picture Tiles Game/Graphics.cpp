@@ -337,6 +337,11 @@ wstring Graphics::Exception::GetExceptionType() const
 }
 
 // FRAME FUNCTIONS
+void Graphics::BeginFrame()
+{
+	// clear the sysbuffer
+	memset( pSysBuffer, COLOR, sizeof( Color ) * Graphics::WINDOW_HEIGHT * Graphics::WINDOW_WIDTH );
+}
 void Graphics::EndFrame()
 {
 	HRESULT hr;
@@ -347,16 +352,19 @@ void Graphics::EndFrame()
 	{
 		throw CHILI_GFX_EXCEPTION( hr,L"Mapping sysbuffer" );
 	}
+
 	// setup parameters for copy operation
 	Color* pDst = reinterpret_cast<Color*>(mappedSysBufferTexture.pData );
 	const size_t dstPitch = mappedSysBufferTexture.RowPitch / sizeof( Color );
 	const size_t srcPitch = Graphics::WINDOW_WIDTH;
 	const size_t rowBytes = srcPitch * sizeof( Color );
+
 	// perform the copy line-by-line
 	for( size_t y = 0u; y < Graphics::WINDOW_HEIGHT; y++ )
 	{
 		memcpy( &pDst[ y * dstPitch ],&pSysBuffer[y * srcPitch],rowBytes );
 	}
+
 	// release the adapter memory
 	pImmediateContext->Unmap( pSysBufferTexture.Get(),0u );
 
@@ -384,11 +392,6 @@ void Graphics::EndFrame()
 			throw CHILI_GFX_EXCEPTION( hr,L"Presenting back buffer" );
 		}
 	}
-}
-void Graphics::BeginFrame()
-{
-	// clear the sysbuffer
-	memset( pSysBuffer, COLOR, sizeof( Color ) * Graphics::WINDOW_HEIGHT * Graphics::WINDOW_WIDTH );
 }
 
 // DRAW FUNCTIONS
@@ -446,7 +449,7 @@ void Graphics::DrawLineSegment( const int& X0, const int& Y0, const int& X1, con
 }
 void Graphics::DrawLineSegment( const Vector& A, const Vector& B, const float& WIDTH, const Color& COLOR )
 {
-	const Vector NORMAL( Normalise( B - A ) );
+	const Vector NORMAL( Normalize( B - A ) );
 	const Vector OFFSET( Multiply( Rotate90CCW( NORMAL ), max(1.0f,WIDTH / 2.0f )) );
 	const Vector V0( A - OFFSET );
 	const Vector V1( A + OFFSET );
@@ -535,11 +538,20 @@ void Graphics::DrawTriangle( const bool& FILLED, const Vector& A, const Vector& 
 		DrawLineSegment( C, A, COLOR );
 	}	
 }
+void Graphics::DrawTile(const Tile& T, const Surface& IMAGE)
+{
+	const TextureVertex T0 = { T.GetPosition(0),T.GetTexCoord(0) };
+	const TextureVertex T1 = { T.GetPosition(1),T.GetTexCoord(1) };
+	const TextureVertex T2 = { T.GetPosition(2),T.GetTexCoord(2) };
+	const TextureVertex T3 = { T.GetPosition(3),T.GetTexCoord(3) };
+	DrawTriangleTex(T0, T1, T3, IMAGE);
+	DrawTriangleTex(T0, T3, T2, IMAGE);
+}
 void Graphics::DrawVector( const Vector& V, const Color& COLOR )
 {
 	DrawLineSegment( 0, 0, (int)V.x, (int)V.y, COLOR );
 
-	const Vector NORMAL( Normalise( V ) );
+	const Vector NORMAL( Normalize( V ) );
 	const Vector A( Multiply( NORMAL, 100.0f ) );
 	const Vector B( Add( A, Rotate( Multiply( NORMAL, 20.0f ), 60.0f ) ) );
 	const Vector C( Add( A, Rotate( Multiply( NORMAL, 20.0f ), -60.0f ) ) );
@@ -550,7 +562,7 @@ void Graphics::DrawVector( const Vector& TAIL, const Vector& TOP, const Color& C
 {
 	const Vector VECTOR( Subtract( TOP, TAIL ) );
 	const float	 LENGTH( Length(VECTOR) );
-	const Vector NORMAL( Normalise( VECTOR ) );
+	const Vector NORMAL( Normalize( VECTOR ) );
 	const Vector A( Add(TAIL, Multiply( NORMAL, LENGTH ) ) );
 	const Vector B( Add( A, Rotate( Multiply( NORMAL, LENGTH / 10.0f ), 60.0f ) ) );
 	const Vector C( Add( A, Rotate( Multiply( NORMAL, LENGTH / 10.0f ), -60.0f ) ) );
@@ -742,6 +754,223 @@ void Graphics::DrawFlatTriangle( const Vector& it0,	const Vector& it1, const Vec
 		for( int x = xStart; x < xEnd; x++, iLine += diLine )
 		{			
 			DrawPixel( x, y, COLOR );			
+		}
+	}
+}
+
+//void Graphics::DrawTriangle(const Vector& v0, const Vector& v1, const Vector& v2, Color c)
+//{
+//	// using pointers so we can swap (for sorting purposes)
+//	const Vector* pv0 = &v0;
+//	const Vector* pv1 = &v1;
+//	const Vector* pv2 = &v2;
+//
+//	// sorting vertices by y
+//	if (pv1->y < pv0->y) std::swap(pv0, pv1);
+//	if (pv2->y < pv1->y) std::swap(pv1, pv2);
+//	if (pv1->y < pv0->y) std::swap(pv0, pv1);
+//
+//	if (pv0->y == pv1->y) // natural flat top
+//	{
+//		// sorting top vertices by x
+//		if (pv1->x < pv0->x) std::swap(pv0, pv1);
+//		DrawFlatTopTriangle(*pv0, *pv1, *pv2, c);
+//	}
+//	else if (pv1->y == pv2->y) // natural flat bottom
+//	{
+//		// sorting bottom vertices by x
+//		if (pv2->x < pv1->x) std::swap(pv1, pv2);
+//		DrawFlatBottomTriangle(*pv0, *pv1, *pv2, c);
+//	}
+//	else // general triangle
+//	{
+//		// find splitting vertex
+//		const float alphaSplit =
+//			(pv1->y - pv0->y) /
+//			(pv2->y - pv0->y);
+//		const Vector vi = *pv0 + (*pv2 - *pv0) * alphaSplit;
+//
+//		if (pv1->x < vi.x) // major right
+//		{
+//			DrawFlatBottomTriangle(*pv0, *pv1, vi, c);
+//			DrawFlatTopTriangle(*pv1, vi, *pv2, c);
+//		}
+//		else // major left
+//		{
+//			DrawFlatBottomTriangle(*pv0, vi, *pv1, c);
+//			DrawFlatTopTriangle(vi, *pv1, *pv2, c);
+//		}
+//	}
+//}
+
+void Graphics::DrawTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
+{
+	// using pointers so we can swap (for sorting purposes)
+	const Math::TextureVertex* pv0 = &v0;
+	const Math::TextureVertex* pv1 = &v1;
+	const Math::TextureVertex* pv2 = &v2;
+
+	// sorting vertices by y
+	if (pv1->pos.y < pv0->pos.y) std::swap(pv0, pv1);
+	if (pv2->pos.y < pv1->pos.y) std::swap(pv1, pv2);
+	if (pv1->pos.y < pv0->pos.y) std::swap(pv0, pv1);
+
+	if (pv0->pos.y == pv1->pos.y) // natural flat top
+	{
+		// sorting top vertices by x
+		if (pv1->pos.x < pv0->pos.x) std::swap(pv0, pv1);
+		DrawFlatTopTriangleTex(*pv0, *pv1, *pv2, tex);
+	}
+	else if (pv1->pos.y == pv2->pos.y) // natural flat bottom
+	{
+		// sorting bottom vertices by x
+		if (pv2->pos.x < pv1->pos.x) std::swap(pv1, pv2);
+		DrawFlatBottomTriangleTex(*pv0, *pv1, *pv2, tex);
+	}
+	else // general triangle
+	{
+		// find splitting vertex
+		const float alphaSplit =
+			(pv1->pos.y - pv0->pos.y) /
+			(pv2->pos.y - pv0->pos.y);
+		const Math::TextureVertex vi = pv0->InterpolateTo(*pv2, alphaSplit);
+
+		if (pv1->pos.x < vi.pos.x) // major right
+		{
+			DrawFlatBottomTriangleTex(*pv0, *pv1, vi, tex);
+			DrawFlatTopTriangleTex(*pv1, vi, *pv2, tex);
+		}
+		else // major left
+		{
+			DrawFlatBottomTriangleTex(*pv0, vi, *pv1, tex);
+			DrawFlatTopTriangleTex(vi, *pv1, *pv2, tex);
+		}
+	}
+}
+
+//void Graphics::DrawFlatTopTriangle(const Vector& v0, const Vector& v1, const Vector& v2, Color c)
+//{
+//	// calulcate slopes in screen space
+//	const float m0 = (v2.x - v0.x) / (v2.y - v0.y);
+//	const float m1 = (v2.x - v1.x) / (v2.y - v1.y);
+//
+//	// calculate start and end scanlines
+//	const int yStart = (int)ceil(v0.y - 0.5f);
+//	const int yEnd = (int)ceil(v2.y - 0.5f); // the scanline AFTER the last line drawn
+//
+//	for (int y = yStart; y < yEnd; y++)
+//	{
+//		// caluclate start and end points (x-coords)
+//		// add 0.5 to y value because we're calculating based on pixel CENTERS
+//		const float px0 = m0 * (float(y) + 0.5f - v0.y) + v0.x;
+//		const float px1 = m1 * (float(y) + 0.5f - v1.y) + v1.x;
+//
+//		// calculate start and end pixels
+//		const int xStart = (int)ceil(px0 - 0.5f);
+//		const int xEnd = (int)ceil(px1 - 0.5f); // the pixel AFTER the last pixel drawn
+//
+//		for (int x = xStart; x < xEnd; x++)
+//		{
+//			PutPixel(x, y, c);
+//		}
+//	}
+//}
+
+//void Graphics::DrawFlatBottomTriangle(const Vector& v0, const Vector& v1, const Vector& v2, Color c)
+//{
+//	// calulcate slopes in screen space
+//	const float m0 = (v1.x - v0.x) / (v1.y - v0.y);
+//	const float m1 = (v2.x - v0.x) / (v2.y - v0.y);
+//
+//	// calculate start and end scanlines
+//	const int yStart = (int)ceil(v0.y - 0.5f);
+//	const int yEnd = (int)ceil(v2.y - 0.5f); // the scanline AFTER the last line drawn
+//
+//	for (int y = yStart; y < yEnd; y++)
+//	{
+//		// caluclate start and end points
+//		// add 0.5 to y value because we're calculating based on pixel CENTERS
+//		const float px0 = m0 * (float(y) + 0.5f - v0.y) + v0.x;
+//		const float px1 = m1 * (float(y) + 0.5f - v0.y) + v0.x;
+//
+//		// calculate start and end pixels
+//		const int xStart = (int)ceil(px0 - 0.5f);
+//		const int xEnd = (int)ceil(px1 - 0.5f); // the pixel AFTER the last pixel drawn
+//
+//		for (int x = xStart; x < xEnd; x++)
+//		{
+//			PutPixel(x, y, c);
+//		}
+//	}
+//}
+
+void Graphics::DrawFlatTopTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
+{
+	// calulcate dVertex / dy
+	const float delta_y = v2.pos.y - v0.pos.y;
+	const Math::TextureVertex dv0 = (v2 - v0) / delta_y;
+	const Math::TextureVertex dv1 = (v2 - v1) / delta_y;
+
+	// create right edge interpolant
+	Math::TextureVertex itEdge1 = v1;
+
+	// call the flat triangle render routine
+	DrawFlatTriangleTex(v0, v1, v2, tex, dv0, dv1, itEdge1);
+}
+
+void Graphics::DrawFlatBottomTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
+{
+	// calulcate dVertex / dy
+	const float delta_y = v2.pos.y - v0.pos.y;
+	const Math::TextureVertex dv0 = (v1 - v0) / delta_y;
+	const Math::TextureVertex dv1 = (v2 - v0) / delta_y;
+
+	// create right edge interpolant
+	Math::TextureVertex itEdge1 = v0;
+
+	// call the flat triangle render routine
+	DrawFlatTriangleTex(v0, v1, v2, tex, dv0, dv1, itEdge1);
+}
+
+void Graphics::DrawFlatTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex,
+	const Math::TextureVertex& dv0, const Math::TextureVertex& dv1, Math::TextureVertex& itEdge1)
+{
+	// create edge interpolant for left edge (always v0)
+	Math::TextureVertex itEdge0 = v0;
+
+	// calculate start and end scanlines
+	const int yStart = (int)ceil(v0.pos.y - 0.5f);
+	const int yEnd = (int)ceil(v2.pos.y - 0.5f); // the scanline AFTER the last line drawn
+
+	// do interpolant prestep
+	itEdge0 += dv0 * (float(yStart) + 0.5f - v0.pos.y);
+	itEdge1 += dv1 * (float(yStart) + 0.5f - v0.pos.y);
+
+	// init tex width/height and clamp values
+	const float tex_width = float(tex.GetWidth());
+	const float tex_height = float(tex.GetHeight());
+	const float tex_clamp_x = tex_width - 1.0f;
+	const float tex_clamp_y = tex_height - 1.0f;
+
+	for (int y = yStart; y < yEnd; y++, itEdge0 += dv0, itEdge1 += dv1)
+	{
+		// calculate start and end pixels
+		const int xStart = (int)ceil(itEdge0.pos.x - 0.5f);
+		const int xEnd = (int)ceil(itEdge1.pos.x - 0.5f); // the pixel AFTER the last pixel drawn
+
+		// calculate scanline dTexCoord / dx
+		const Vector dtcLine = (itEdge1.tc - itEdge0.tc) / (itEdge1.pos.x - itEdge0.pos.x);
+
+		// create scanline tex coord interpolant and prestep
+		Vector itcLine = itEdge0.tc + dtcLine * (float(xStart) + 0.5f - itEdge0.pos.x);
+
+		for (int x = xStart; x < xEnd; x++, itcLine += dtcLine)
+		{
+			DrawPixel(x, y, tex.GetPixel(
+				int(std::min(itcLine.x * tex_width, tex_clamp_x)),
+				int(std::min(itcLine.y * tex_height, tex_clamp_y))));
+			// need std::min b/c tc.x/y == 1.0, we'll read off edge of tex
+			// and with fp err, tc.x/y can be > 1.0 (by a tiny amount)
 		}
 	}
 }

@@ -34,13 +34,14 @@ using namespace Colors;
 
 using namespace std;
 
-Game::Game( MainWindow& wnd )
+Game::Game(MainWindow& wnd)
 	:
-	wnd( wnd ),
-	gfx( wnd ),
-	image( Surface::FromFile( L"Images\\numbersquare.png"))
+	wnd(wnd),
+	gfx(wnd)	
 {
-	RandomiseTiles();
+	SetTiles();
+
+	timer.StartWatch();
 }
 
 void Game::Go()
@@ -53,346 +54,390 @@ void Game::Go()
 
 void Game::Update()
 {
-	if (!keyPressed)
-	{
-		if (wnd.kbd.KeyIsPressed(VK_LEFT))
-		{
-			keyPressed = true;
-			if (cursor != 0 && cursor != 3 && cursor != 6)
-			{
-				cursor--;
-			}
-		}
-		else if (wnd.kbd.KeyIsPressed(VK_RIGHT))
-		{
-			keyPressed = true;
-			if (cursor != 2 && cursor != 5 && cursor != 8)
-			{
-				cursor++;
-			}
-		}
-		else if (wnd.kbd.KeyIsPressed(VK_UP))
-		{
-			keyPressed = true;
-			if (cursor != 0 && cursor != 1 && cursor != 2)
-			{
-				cursor -= 3;
-			}
-		}
-		else if (wnd.kbd.KeyIsPressed(VK_DOWN))
-		{
-			keyPressed = true;
-			if (cursor != 6 && cursor != 7 && cursor != 8)
-			{
-				cursor += 3;
-			}
-		}
+	GetFrameTime();
 
-		if (wnd.kbd.KeyIsPressed(VK_RETURN))
-		{
-			keyPressed = true;
-
-			/**/ if (cursor == 0)
-			{
-				if (nums[cursor + 1] == 8) // gap one to right of cursor
-				{
-					swap(nums[cursor + 0], nums[cursor + 1]);
-				}
-				else if (nums[cursor + 2] == 8) // gap two to right of cursor
-				{
-					swap(nums[cursor + 1], nums[cursor + 0]);
-					swap(nums[cursor + 0], nums[cursor + 2]);
-				}
-				else if (nums[cursor + 3 * 1] == 8) // gap is one below cursor
-				{
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 1]);
-				}
-				else if (nums[cursor + 3 * 2] == 8) // gap is two below cursor
-				{
-					swap(nums[cursor + 3 * 1], nums[cursor + 3 * 0]);
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 2]);
-				}
-			}
-			else if (cursor == 1)
-			{
-				if (nums[cursor - 1] == 8) // gap one to left  of cursor
-				{
-					swap(nums[cursor - 0], nums[cursor - 1]);
-				}
-				else if (nums[cursor + 1] == 8) // gap one to right of cursor
-				{
-					swap(nums[cursor + 0], nums[cursor + 1]);
-				}
-				else if (nums[cursor + 3 * 1] == 8) // gap is one below cursor
-				{
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 1]);
-				}
-				else if (nums[cursor + 3 * 2] == 8) // gap is two below cursor
-				{
-					swap(nums[cursor + 3 * 1], nums[cursor + 3 * 0]);
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 2]);
-				}
-			}
-			else if (cursor == 2)
-			{
-				if (nums[cursor - 1] == 8) // gap one to left  of cursor
-				{
-					swap(nums[cursor - 0], nums[cursor - 1]);
-				}
-				else if (nums[cursor - 2] == 8) // gap two to left of cursor
-				{
-					swap(nums[cursor - 1], nums[cursor - 0]);
-					swap(nums[cursor - 0], nums[cursor - 2]);
-				}
-				else if (nums[cursor + 3 * 1] == 8) // gap is one below cursor
-				{
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 1]);
-				}
-				else if (nums[cursor + 3 * 2] == 8) // gap is two below cursor
-				{
-					swap(nums[cursor + 3 * 1], nums[cursor + 3 * 0]);
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 2]);
-				}
-			}
-			else if (cursor == 3)
-			{
-				if (nums[cursor + 1] == 8) // gap one to right of cursor
-				{
-					swap(nums[cursor + 0], nums[cursor + 1]);
-				}
-				else if (nums[cursor + 2] == 8) // gap two to right of cursor
-				{
-					swap(nums[cursor + 1], nums[cursor + 0]);
-					swap(nums[cursor + 0], nums[cursor + 2]);
-				}
-				else if (nums[cursor - 3 * 1] == 8) // gap is one above cursor
-				{
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 1]);
-				}
-				else if (nums[cursor + 3 * 1] == 8) // gap is one below cursor
-				{
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 1]);
-				}
-			}
-			else if (cursor == 4)
-			{
-				if (nums[cursor - 1] == 8) // gap one to left  of cursor
-				{
-					swap(nums[cursor - 0], nums[cursor - 1]);
-				}
-				else if (nums[cursor + 1] == 8) // gap one to right of cursor
-				{
-					swap(nums[cursor + 0], nums[cursor + 1]);
-				}
-				else if (nums[cursor - 3 * 1] == 8) // gap is one above cursor
-				{
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 1]);
-				}
-				else if (nums[cursor + 3 * 1] == 8) // gap is one below cursor
-				{
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 1]);
-				}
-			}
-			else if (cursor == 5)
-			{
-				if (nums[cursor - 1] == 8) // gap one to left  of cursor
-				{
-					swap(nums[cursor - 0], nums[cursor - 1]);
-				}
-				else if (nums[cursor - 2] == 8) // gap two to left of cursor
-				{
-					swap(nums[cursor - 1], nums[cursor - 0]);
-					swap(nums[cursor - 0], nums[cursor - 2]);
-				}
-				else if (nums[cursor - 3 * 1] == 8) // gap is one above cursor
-				{
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 1]);
-				}
-				else if (nums[cursor + 3 * 1] == 8) // gap is one below cursor
-				{
-					swap(nums[cursor + 3 * 0], nums[cursor + 3 * 1]);
-				}
-			}
-			else if (cursor == 6)
-			{
-				if (nums[cursor + 1] == 8) // gap one to right of cursor
-				{
-					swap(nums[cursor + 0], nums[cursor + 1]);
-				}
-				else if (nums[cursor + 2] == 8) // gap two to right of cursor
-				{
-					swap(nums[cursor + 1], nums[cursor + 0]);
-					swap(nums[cursor + 0], nums[cursor + 2]);
-				}
-				else if (nums[cursor - 3 * 1] == 8) // gap is one above cursor
-				{
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 1]);
-				}
-				else if (nums[cursor - 3 * 2] == 8) // gap is two above cursor
-				{
-					swap(nums[cursor - 3 * 1], nums[cursor - 3 * 0]);
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 2]);
-				}
-			}
-			else if (cursor == 7)
-			{
-				if (nums[cursor - 1] == 8) // gap one to left  of cursor
-				{
-					swap(nums[cursor - 0], nums[cursor - 1]);
-				}
-				else if (nums[cursor + 1] == 8) // gap one to right of cursor
-				{
-					swap(nums[cursor + 0], nums[cursor + 1]);
-				}
-				else if (nums[cursor - 3 * 1] == 8) // gap is one above cursor
-				{
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 1]);
-				}
-				else if (nums[cursor - 3 * 2] == 8) // gap is two above cursor
-				{
-					swap(nums[cursor - 3 * 1], nums[cursor - 3 * 0]);
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 2]);
-				}
-			}
-			else if (cursor == 8)
-			{
-				if (nums[cursor - 1] == 8) // gap one to left  of cursor
-				{
-					swap(nums[cursor - 0], nums[cursor - 1]);
-				}
-				else if (nums[cursor - 2] == 8) // gap two to left of cursor
-				{
-					swap(nums[cursor - 1], nums[cursor - 0]);
-					swap(nums[cursor - 0], nums[cursor - 2]);
-				}
-				else if (nums[cursor - 3 * 1] == 8) // gap is one above cursor
-				{
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 1]);
-				}
-				else if (nums[cursor - 3 * 2] == 8) // gap is two above cursor
-				{
-					swap(nums[cursor - 3 * 1], nums[cursor - 3 * 0]);
-					swap(nums[cursor - 3 * 0], nums[cursor - 3 * 2]);
-				}
-			}
-		}
-
-		if (wnd.kbd.KeyIsPressed(VK_SPACE))
-		{
-			keyPressed = true;
-			RandomiseTiles();
-		}
-
-		if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
-		{
-			wnd.Kill();
-		}		
-	}
-	else
-	{
-		if (!wnd.kbd.KeyIsPressed(VK_SPACE) && 
-			!wnd.kbd.KeyIsPressed(VK_RETURN) &&
-			!wnd.kbd.KeyIsPressed(VK_LEFT) &&
-			!wnd.kbd.KeyIsPressed(VK_RIGHT) &&
-			!wnd.kbd.KeyIsPressed(VK_UP) &&
-			!wnd.kbd.KeyIsPressed(VK_DOWN))
-		{
-			keyPressed = false;
-		}
-	}
-
-	if (nums[0] == 0 &&
-		nums[1] == 1 &&
-		nums[2] == 2 &&
-		nums[3] == 3 &&
-		nums[4] == 4 &&
-		nums[5] == 5 &&
-		nums[6] == 6 &&
-		nums[7] == 7)
-	{
-		gameOver = true;
-	}
-	else gameOver = false;
+	MoveCursor();	
+	MoveTile();
+	CheckForGameOver();
+	ResetTiles();
+	CloseGame();
 }
 
 void Game::Draw()
 {
 	DrawTiles();
-	if (!gameOver) DrawCursor();	
+		
+	if (!gameOver) DrawCursor();
+}
+
+//---------------------------------------------------
+
+void Game::SetTiles()
+{
+	SetImages();
+	SetTextureCoordinates();
+	SetPositions();
+	SetTileImage();
+	RandomiseTiles();
+	//SetAdjacents();
+}
+
+void Game::SetImages()
+{
+	images.push_back(Surface::FromFile(L"Images\\numbersquare.png"));
+	images.push_back(Surface::FromFile(L"Images\\mountain.jpg"));
+	images.push_back(Surface::FromFile(L"Images\\earth.jpg"));
+	images.push_back(Surface::FromFile(L"Images\\squirrel.jpg"));
+	images.push_back(Surface::FromFile(L"Images\\pretty.jpg"));
+}
+
+void Game::SetTextureCoordinates()
+{
+	texCoords.clear();
+
+	Vector topLeft;
+	Vector topRight;
+	Vector bottomLeft;
+	Vector bottomRight;
+
+	for (int i = 0; i < SIZE; i++)
+	{
+		const float LEFT = XFRACTION * (i % COLS);
+		const float TOP = YFRACTION * (i / COLS);
+		const float RIGHT = LEFT + XFRACTION;
+		const float BOTTOM = TOP + YFRACTION;
+
+		topLeft = { 
+			std::max(LEFT, 0.0f),
+			std::max(TOP, 0.0f) };
+
+		topRight = { 
+			std::min(RIGHT, 1.0f),
+			std::max(TOP, 0.0f) };
+
+		bottomLeft = { 
+			std::max(LEFT, 0.0f),
+			std::min(BOTTOM, 1.0f) };
+
+		bottomRight = { 
+			std::min(RIGHT, 1.0f),
+			std::min(BOTTOM, 1.0f)};
+
+		texCoords.push_back({
+			topLeft,
+			topRight,
+			bottomLeft,
+			bottomRight });
+	}
+}
+
+void Game::SetPositions()
+{
+	positions.clear();
+
+	Vector topLeft;
+	Vector topRight;
+	Vector bottomLeft;
+	Vector bottomRight;
+
+	for (int i = 0; i < SIZE; i++)
+	{
+		const float LEFT = (float)XOFF + WIDTH * (i % COLS);
+		const float TOP = (float)YOFF + HEIGHT * (i / COLS);
+		const float RIGHT = LEFT + WIDTH;
+		const float BOTTOM = TOP + HEIGHT;
+
+		topLeft = {	LEFT, TOP };
+		topRight = { RIGHT, TOP };
+		bottomLeft = { LEFT, BOTTOM };
+		bottomRight = {	RIGHT, BOTTOM };
+
+		positions.push_back({
+			topLeft,
+			topRight,
+			bottomLeft,
+			bottomRight });
+	}
+}
+
+void Game::SetTileImage()
+{
+	imageNum++;
+	if (imageNum >= images.size()) imageNum = 0;
 }
 
 void Game::RandomiseTiles()
 {
-	nums.clear();
+	tiles.clear();
 
-	for (int i = 0; i < 9; i++)
+	std::vector<int> numbers;
+
+	for (int i = 0; i < SIZE; i++)
 	{
-		int num = Math::Random(0, 8);
+		numbers.push_back(i);
+	}
 
-		for (int j = 0; j < nums.size(); j++)
-		{
-			while (num == nums[j])
-			{
-				num = Math::Random(0, 8);
-				j = 0;
-			}
-		}
-		nums.push_back(num);
+	assert(numbers.size() == SIZE);
+
+	for (int i = 0; i < SIZE; i++)
+	{
+		const int RANDOM_NUMBER = Random(0, (int)numbers.size() - 1);
+
+		tiles.push_back({
+			numbers[RANDOM_NUMBER],
+			positions,
+			i,
+			texCoords});
+
+		numbers.erase(numbers.begin() + RANDOM_NUMBER);
+	}
+
+	assert(numbers.empty() == true);
+	assert(tiles.size() == SIZE);
+}
+
+void Game::SetAdjacents()
+{
+	assert(tiles.size() == SIZE);
+
+	// set pointers to tiles on all sides
+	// a nullptr means there is no tile on that side
+	for (size_t i = 0; i < SIZE; i++)
+	{
+		const bool L = i % COLS == 0;
+		const bool U = i < COLS;
+		const bool R = i % (COLS - 1) == 0 && i > 0;
+		const bool D = i > (SIZE - COLS - 1);
+
+		if (L) tiles[i].SetLeft(nullptr);
+		else   tiles[i].SetLeft(&tiles[i - 1]);
+
+		if (U) tiles[i].SetUp(nullptr);
+		else   tiles[i].SetUp(&tiles[i - COLS]);
+
+		if (R) tiles[i].SetRight(nullptr);
+		else   tiles[i].SetRight(&tiles[i + 1]);
+
+		if (D) tiles[i].SetDown(nullptr);
+		else   tiles[i].SetDown(&tiles[i + COLS]);
 	}
 }
 
-void Game::DrawImageSection(const int X, const int Y, const int I)
+void Game::GetFrameTime()
 {
-	const int COL = I % 3u;
-	const int ROW = I / 3u;
+	timeNew = timer.GetTimeMilli();
+	frameTime = timeNew - timeOld;
+	timeOld = timeNew;
+}
 
-	const int XSTART = 100 * COL;
-	const int YSTART = 100 * ROW;
-
-	const int XEND = XSTART + 100;
-	const int YEND = YSTART + 100;
-
-	for (int iy = YSTART; iy < YEND; iy++)
+void Game::CheckForGameOver()
+{
+	if (!gameOver)
 	{
-		for (int ix = XSTART; ix < XEND; ix++)
+		int count = 0;
+		for (int i = 0; i < SIZE; i++)
 		{
-			gfx.DrawPixel(X + ix - XSTART, Y + iy - YSTART, image.GetPixel(ix, iy));
+			if (tiles[i].GetPos() == i)
+			{
+				count++;
+			}
+			else
+			{
+				gameOver = false;
+				break;
+			}
+		}
+
+		if (count == SIZE) gameOver = true;
+	}
+}
+
+void Game::MoveCursor()
+{
+	if (!arrowPressed)
+	{
+		/**/ if (wnd.kbd.KeyIsPressed(VK_LEFT))
+		{
+			arrowPressed = true;
+			int count = 0;
+			for (int i = 0; i < COLS; i++)
+			{
+				if (cursor != i * COLS)
+				{
+					count++;
+				}
+			}
+			if (count == COLS) cursor--;
+		}
+		else if (wnd.kbd.KeyIsPressed(VK_RIGHT))
+		{
+			arrowPressed = true;
+			int count = 0;
+			for (int i = 1; i <= COLS; i++)
+			{
+				int j = i * COLS - 1;
+				if (cursor != j)
+				{
+					count++;
+				}
+			}
+			if (count == COLS) cursor++;
+		}
+		else if (wnd.kbd.KeyIsPressed(VK_UP))
+		{
+			arrowPressed = true;
+			if (cursor > COLS - 1)
+			{
+				cursor -= COLS;
+			}
+		}
+		else if (wnd.kbd.KeyIsPressed(VK_DOWN))
+		{
+			arrowPressed = true;
+			if (cursor < (ROWS - 1) * COLS)
+			{
+				cursor += COLS;
+			}
+		}		
+	}
+	else
+	{
+		if (!wnd.kbd.KeyIsPressed(VK_LEFT) &&
+			!wnd.kbd.KeyIsPressed(VK_RIGHT) &&
+			!wnd.kbd.KeyIsPressed(VK_UP) &&
+			!wnd.kbd.KeyIsPressed(VK_DOWN))
+		{
+			arrowPressed = false;
+		}
+	}
+}
+
+void Game::MoveTile()
+{
+	if (!spacePressed && !isMoving)
+	{
+		if (wnd.kbd.KeyIsPressed(VK_SPACE))
+		{
+			spacePressed = true;
+
+			int cursorTileIndex = 0;
+			for (size_t i = 0; i < SIZE; i++)
+			{
+				if (tiles[i].GetPos() == cursor)
+				{
+					cursorTileIndex = i;
+				}
+			}
+
+			const int GAP = tiles[SIZE - 1].GetPos();
+	
+			const int GAP_COL = GAP % COLS;
+			const int GAP_ROW = GAP / COLS;
+
+			const int CUR_COL = cursor % COLS;
+			const int CUR_ROW = cursor / COLS;
+
+			const bool CURSOR_LEFT_OF_GAP = cursor == GAP - 1;
+			const bool CURSOR_RIGHT_OF_GAP = cursor == GAP + 1;
+			const bool CURSOR_IN_SAME_ROW_AS_GAP = CUR_ROW == GAP_ROW;
+
+			const bool CURSOR_ABOVE_GAP = cursor == GAP - COLS;
+			const bool CURSOR_BELOW_GAP = cursor == GAP + COLS;
+			const bool CURSOR_IN_SAME_COLUMN_AS_GAP = CUR_COL == GAP_COL;
+
+			if (GAP != cursor)
+			{
+				if (
+						(
+							(CURSOR_LEFT_OF_GAP || CURSOR_RIGHT_OF_GAP)  
+							&& 
+							CURSOR_IN_SAME_ROW_AS_GAP
+						)
+						||
+						(	
+							(CURSOR_ABOVE_GAP || CURSOR_BELOW_GAP)
+							&& 
+							CURSOR_IN_SAME_COLUMN_AS_GAP
+						)
+					)
+				{
+					tiles[SIZE - 1].SetPosition(cursor);
+					tiles[cursorTileIndex].SetMove(GAP);
+					isMoving = true;
+				}
+			}
+		}		
+	}
+	else
+	{
+		if (!wnd.kbd.KeyIsPressed(VK_SPACE))
+		{
+			spacePressed = false;
+		}
+	}
+				
+	// do movement
+	for (Tile& t : tiles)
+	{
+		if (t.IsMoving())
+		{
+			t.Move(frameTime);
+		}
+		else
+		{
+			isMoving = false;
+		}
+	}	
+}
+
+void Game::ResetTiles()
+{
+	if (!returnPressed)
+	{
+		if (wnd.kbd.KeyIsPressed(VK_RETURN))
+		{
+			returnPressed = true;
+			SetTileImage();
+			RandomiseTiles();
+			SetAdjacents();
+			gameOver = false;
+		}
+	}
+	else
+	{
+		if (!wnd.kbd.KeyIsPressed(VK_RETURN))
+		{
+			returnPressed = false;
 		}
 	}
 }
 
 void Game::DrawTiles()
 {
-	if (!gameOver)
+	for( const Tile& T : tiles )
 	{
-		for (int iy = 0; iy < 3; iy++)
+		if (T.GetTex() != SIZE - 1 || gameOver)
 		{
-			for (int ix = 0; ix < 3; ix++)
-			{
-				int i = iy * 3 + ix;
-				if (nums[i] != 8)
-				{
-					DrawImageSection(100 + 100 * ix, 100 + 100 * iy, nums[i]);
-				}
-			}
+			gfx.DrawTile(T, images[imageNum]);
 		}
-	}
-	else
-	{
-		gfx.DrawImage(false, 100, 100, image);
 	}
 }
 
 void Game::DrawCursor()
 {
-	int x = cursor % 3u;
-	int y = cursor / 3u;
-
 	gfx.DrawRectangle(
 		false,
-		100 + x * 100 + 10,
-		100 + y * 100 + 10,
-		200 + x * 100 - 10,
-		200 + y * 100 - 10,
+		XOFF + cursor % COLS * WIDTH  + 10,
+		YOFF + cursor / COLS * HEIGHT + 10,
+		XOFF + cursor % COLS * WIDTH  + WIDTH  - 10,
+		YOFF + cursor / COLS * HEIGHT + HEIGHT - 10,
 		Red);
+}
+
+void Game::CloseGame()
+{
+	if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
+	{
+		wnd.Kill();
+	}
 }
