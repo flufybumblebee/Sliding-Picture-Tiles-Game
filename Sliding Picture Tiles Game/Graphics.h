@@ -61,6 +61,7 @@ public:
 	void EndFrame();
 
 public:
+	// PIXEL
 	void	DrawPixel( const int& X, const int& Y, const Color& COLOR )
 	{
 		/*assert( X >= 0 );
@@ -98,7 +99,7 @@ public:
 		DrawPixel((int)V.x, (int)V.y, COLOR);
 	}
 
-public:
+
 	// LINE SEGMENT
 	void DrawLineSegment(const int& X0, const int& Y0, const int& X1, const int& Y1, const Color& COLOR);
 	void DrawLineSegment(const Math::Vector& A, const Math::Vector& B, const Color& COLOR)
@@ -110,8 +111,8 @@ public:
 		DrawLineSegment( (int)LS.a.x, (int)LS.a.y, (int)LS.b.x, (int)LS.b.y, COLOR);
 	}
 	
-	void DrawLineSegment( const Math::Vector& A, const Math::Vector& B, const float& WIDTH, const Color& COLOR );
-	void DrawLineSegment( const int& X0, const int& Y0, const int& X1, const int& Y1, const int& WIDTH, const Color& COLOR )
+	void DrawLineSegment(const Math::Vector& A, const Math::Vector& B, const float& WIDTH, const Color& COLOR );
+	void DrawLineSegment(const int& X0, const int& Y0, const int& X1, const int& Y1, const int& WIDTH, const Color& COLOR )
 	{
 		DrawLineSegment( {(float)X0,(float)Y0}, {(float)X1, (float)Y1}, (float)WIDTH, COLOR );
 	}
@@ -124,6 +125,7 @@ public:
 		}
 	}
 	
+
 	// RECTANGLE
 	void DrawRectangle( const bool& FILLED, const int& LEFT, const int& TOP, const int& RIGHT, const int& BOTTOM, const Color& COLOR);
 	void DrawRectangle( const bool& FILLED, const Math::Vector& A, const Math::Vector& B, const Color& COLOR)
@@ -138,7 +140,8 @@ public:
 	{
 		DrawRectangle( FILLED, (int)RECT.left, (int)RECT.top, (int)RECT.right, (int)RECT.bottom, COLOR);
 	}
-		
+	
+
 	// CIRCLE
 	void DrawCircle(const bool& FILLED, const int& X, const int& Y, const int& RADIUS, const Color& COLOR);
 	void DrawCircle(const bool& FILLED, const Math::Circle& CIRCLE, const Color& COLOR)
@@ -168,15 +171,19 @@ public:
 			DrawCircle(FILLED, V, RADIUS, COLOR);
 		}
 	}
-
-	
+		
 
 	// SPECIAL
-
-	void DrawTile(const Tile& T, const Surface& IMAGE);
+	void DrawTile(
+		const std::vector<std::array<Math::Vector, 4>>& POSITIONS,
+		const std::vector<std::array<Math::Vector, 4>>& TEX_COORDS,
+		const Tile& T,
+		const Surface& IMAGE);
 	void DrawVector( const Math::Vector& V, const Color& COLOR );
 	void DrawVector( const Math::Vector& A, const Math::Vector& B, const Color& COLOR );
 
+
+	// IMAGE
 	void DrawImage( const bool& ALPHA, const int& X0, const int& Y0, const int& X1, const int& Y1, const Surface& S );
 	void DrawImage( const bool& ALPHA, const float& X0, const float& Y0, const float& X1, const float& Y1, const Surface& S )
 	{
@@ -205,6 +212,7 @@ public:
 		DrawImage( ALPHA, V.x, V.y, S );
 	}
 	
+
 	// TRIANGLE	
 	void DrawTriangle(const bool& FILLED, const Math::Vector& A, const Math::Vector& B, const Math::Vector& C, const Color& COLOR );
 	void DrawTriangle( const bool& FILLED, const Math::Triangle& T, const Color& COLOR )
@@ -212,20 +220,18 @@ public:
 		DrawTriangle( FILLED, T.GetA(), T.GetB(), T.GetC(), COLOR );
 	}
 	void DrawTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex);
+
 private:
 	void DrawTriangle( const Math::Vector& A, const Math::Vector& B, const Math::Vector& C, const Color& COLOR );
 	void DrawFlatTopTriangle( const Math::Vector& it0, const Math::Vector& it1,	const Math::Vector& it2, const Color& COLOR );
 	void DrawFlatBottomTriangle( const Math::Vector& it0, const Math::Vector& it1, const Math::Vector& it2, const Color& COLOR );
 	void DrawFlatTriangle( const Math::Vector& it0, const Math::Vector& it1, const Math::Vector& it2, const Math::Vector& dv0, const Math::Vector& dv1, Math::Vector itEdge1, const Color& COLOR );
-	//void DrawTriangle(const Math::Vector& v0, const Math::Vector& v1, const Math::Vector& v2, Color c);
-	//void DrawFlatTopTriangle(const Math::Vector& v0, const Math::Vector& v1, const Math::Vector& v2, Color c);
-	//void DrawFlatBottomTriangle(const Math::Vector& v0, const Math::Vector& v1, const Math::Vector& v2, Color c);
-	
-public:
 	void DrawFlatTopTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex);
 	void DrawFlatBottomTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex);
 	void DrawFlatTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex,
 		const Math::TextureVertex& dv0, const Math::TextureVertex& dv1, Math::TextureVertex& itEdge1);
+
+
 private:
 	GDIPlusManager										gdipMan;
 	Microsoft::WRL::ComPtr<IDXGISwapChain>				pSwapChain;
@@ -243,8 +249,8 @@ private:
 	Color*	                                            pSysBuffer;
 
 public:
-	static constexpr int WINDOW_WIDTH = 800;
-	static constexpr int WINDOW_HEIGHT = 600;
+	static constexpr int WINDOW_WIDTH = 500;
+	static constexpr int WINDOW_HEIGHT = 500;
 	static constexpr int WINDOW_LEFT = 0;
 	static constexpr int WINDOW_TOP = 0;
 	static constexpr int WINDOW_RIGHT = WINDOW_WIDTH - 1;

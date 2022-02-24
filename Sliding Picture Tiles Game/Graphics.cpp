@@ -113,7 +113,7 @@ Graphics::Graphics( HWNDKey& key )
 
 
 	// set viewport dimensions
-	D3D11_VIEWPORT vp;
+	D3D11_VIEWPORT vp{};
 	vp.Width = float( Graphics::WINDOW_WIDTH );
 	vp.Height = float( Graphics::WINDOW_HEIGHT );
 	vp.MinDepth = 0.0f;
@@ -125,7 +125,7 @@ Graphics::Graphics( HWNDKey& key )
 
 	///////////////////////////////////////
 	// create texture for cpu render target
-	D3D11_TEXTURE2D_DESC sysTexDesc;
+	D3D11_TEXTURE2D_DESC sysTexDesc{};
 	sysTexDesc.Width = Graphics::WINDOW_WIDTH;
 	sysTexDesc.Height = Graphics::WINDOW_HEIGHT;
 	sysTexDesc.MipLevels = 1;
@@ -327,7 +327,7 @@ wstring Graphics::Exception::GetErrorName() const
 }
 wstring Graphics::Exception::GetErrorDescription() const
 {
-	array<wchar_t,512> wideDescription;
+	array<wchar_t, 512> wideDescription{};
 	DXGetErrorDescription( hr,wideDescription.data(),wideDescription.size() );
 	return wideDescription.data();
 }
@@ -538,12 +538,12 @@ void Graphics::DrawTriangle( const bool& FILLED, const Vector& A, const Vector& 
 		DrawLineSegment( C, A, COLOR );
 	}	
 }
-void Graphics::DrawTile(const Tile& T, const Surface& IMAGE)
+void Graphics::DrawTile(const std::vector<std::array<Math::Vector,4>>& POSITIONS, const std::vector<std::array<Math::Vector,4>>& TEX_COORDS, const Tile& T, const Surface& IMAGE)
 {
-	const TextureVertex T0 = { T.GetPosition(0),T.GetTexCoord(0) };
-	const TextureVertex T1 = { T.GetPosition(1),T.GetTexCoord(1) };
-	const TextureVertex T2 = { T.GetPosition(2),T.GetTexCoord(2) };
-	const TextureVertex T3 = { T.GetPosition(3),T.GetTexCoord(3) };
+	const TextureVertex T0 = { POSITIONS[T.GetPos()][0],TEX_COORDS[T.GetTex()][0] };
+	const TextureVertex T1 = { POSITIONS[T.GetPos()][1],TEX_COORDS[T.GetTex()][1] };
+	const TextureVertex T2 = { POSITIONS[T.GetPos()][2],TEX_COORDS[T.GetTex()][2] };
+	const TextureVertex T3 = { POSITIONS[T.GetPos()][3],TEX_COORDS[T.GetTex()][3] };
 	DrawTriangleTex(T0, T1, T3, IMAGE);
 	DrawTriangleTex(T0, T3, T2, IMAGE);
 }
@@ -723,7 +723,7 @@ void Graphics::DrawFlatBottomTriangle( const Vector& it0, const Vector& it1, con
 void Graphics::DrawFlatTriangle( const Vector& it0,	const Vector& it1, const Vector& it2, const Vector& dv0, const Vector& dv1, Vector itEdge1, const Color& COLOR)
 {
 	// create edge interpolant for left edge (always v0)
-	auto itEdge0 = it0;
+	Vector itEdge0 = it0;
 
 	// calculate start and end scanlines
 	const int yStart = std::max( (int)ceil( it0.y - 0.5f ), 0 );
@@ -742,7 +742,7 @@ void Graphics::DrawFlatTriangle( const Vector& it0,	const Vector& it1, const Vec
 		// create scanline interpolant startpoint
 		// (some waste for interpolating x,y,z, but makes life easier not having
 		//  to split them off, and z will be needed in the future anyways...)
-		auto iLine = itEdge0;
+		Vector iLine = itEdge0;
 
 		// calculate delta scanline interpolant / dx
 		const float dx = itEdge1.x - itEdge0.x;

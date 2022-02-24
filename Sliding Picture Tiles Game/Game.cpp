@@ -59,15 +59,19 @@ void Game::Update()
 	MoveCursor();	
 	MoveTile();
 	CheckForGameOver();
-	ResetTiles();
-	CloseGame();
+	CheckForReset();
+	CheckForExitGame();
 }
 
 void Game::Draw()
 {
 	DrawTiles();
 		
-	if (!gameOver) DrawCursor();
+	if (!gameOver)
+	{
+		DrawCursor();
+		DrawTileBorders();
+	}
 }
 
 //---------------------------------------------------
@@ -77,14 +81,12 @@ void Game::SetTiles()
 	SetImages();
 	SetTextureCoordinates();
 	SetPositions();
-	SetTileImage();
+	RandomiseImage();
 	RandomiseTiles();
-	//SetAdjacents();
 }
 
 void Game::SetImages()
 {
-	images.push_back(Surface::FromFile(L"Images\\numbersquare.png"));
 	images.push_back(Surface::FromFile(L"Images\\mountain.jpg"));
 	images.push_back(Surface::FromFile(L"Images\\earth.jpg"));
 	images.push_back(Surface::FromFile(L"Images\\squirrel.jpg"));
@@ -102,8 +104,8 @@ void Game::SetTextureCoordinates()
 
 	for (int i = 0; i < SIZE; i++)
 	{
-		const float LEFT = XFRACTION * (i % COLS);
-		const float TOP = YFRACTION * (i / COLS);
+		const float LEFT = XFRACTION * float(i % COLS);
+		const float TOP = YFRACTION * float(i / COLS);
 		const float RIGHT = LEFT + XFRACTION;
 		const float BOTTOM = TOP + YFRACTION;
 
@@ -130,7 +132,6 @@ void Game::SetTextureCoordinates()
 			bottomRight });
 	}
 }
-
 void Game::SetPositions()
 {
 	positions.clear();
@@ -142,13 +143,13 @@ void Game::SetPositions()
 
 	for (int i = 0; i < SIZE; i++)
 	{
-		const float LEFT = (float)XOFF + WIDTH * (i % COLS);
-		const float TOP = (float)YOFF + HEIGHT * (i / COLS);
+		const float LEFT = float(WIDTH * (i % COLS));
+		const float TOP = float(HEIGHT * (i / COLS));
 		const float RIGHT = LEFT + WIDTH;
 		const float BOTTOM = TOP + HEIGHT;
 
 		topLeft = {	LEFT, TOP };
-		topRight = { RIGHT, TOP };
+		topRight = { RIGHT, TOP }; 
 		bottomLeft = { LEFT, BOTTOM };
 		bottomRight = {	RIGHT, BOTTOM };
 
@@ -160,12 +161,18 @@ void Game::SetPositions()
 	}
 }
 
-void Game::SetTileImage()
+void Game::NextImage()
 {
 	imageNum++;
 	if (imageNum >= images.size()) imageNum = 0;
 }
-
+void Game::RandomiseImage()
+{
+	if (!images.empty())
+	{
+		imageNum = Math::Random(0, (int)images.size() - 1);
+	}
+}
 void Game::RandomiseTiles()
 {
 	tiles.clear();
@@ -182,12 +189,12 @@ void Game::RandomiseTiles()
 	for (int i = 0; i < SIZE; i++)
 	{
 		const int RANDOM_NUMBER = Random(0, (int)numbers.size() - 1);
-
+		const int POSITION = numbers[RANDOM_NUMBER];
 		tiles.push_back({
-			numbers[RANDOM_NUMBER],
-			positions,
+			POSITION,
+			positions[POSITION],
 			i,
-			texCoords});
+			texCoords[i]});
 
 		numbers.erase(numbers.begin() + RANDOM_NUMBER);
 	}
@@ -196,60 +203,11 @@ void Game::RandomiseTiles()
 	assert(tiles.size() == SIZE);
 }
 
-void Game::SetAdjacents()
-{
-	assert(tiles.size() == SIZE);
-
-	// set pointers to tiles on all sides
-	// a nullptr means there is no tile on that side
-	for (size_t i = 0; i < SIZE; i++)
-	{
-		const bool L = i % COLS == 0;
-		const bool U = i < COLS;
-		const bool R = i % (COLS - 1) == 0 && i > 0;
-		const bool D = i > (SIZE - COLS - 1);
-
-		if (L) tiles[i].SetLeft(nullptr);
-		else   tiles[i].SetLeft(&tiles[i - 1]);
-
-		if (U) tiles[i].SetUp(nullptr);
-		else   tiles[i].SetUp(&tiles[i - COLS]);
-
-		if (R) tiles[i].SetRight(nullptr);
-		else   tiles[i].SetRight(&tiles[i + 1]);
-
-		if (D) tiles[i].SetDown(nullptr);
-		else   tiles[i].SetDown(&tiles[i + COLS]);
-	}
-}
-
 void Game::GetFrameTime()
 {
 	timeNew = timer.GetTimeMilli();
 	frameTime = timeNew - timeOld;
 	timeOld = timeNew;
-}
-
-void Game::CheckForGameOver()
-{
-	if (!gameOver)
-	{
-		int count = 0;
-		for (int i = 0; i < SIZE; i++)
-		{
-			if (tiles[i].GetPos() == i)
-			{
-				count++;
-			}
-			else
-			{
-				gameOver = false;
-				break;
-			}
-		}
-
-		if (count == SIZE) gameOver = true;
-	}
 }
 
 void Game::MoveCursor()
@@ -311,7 +269,6 @@ void Game::MoveCursor()
 		}
 	}
 }
-
 void Game::MoveTile()
 {
 	if (!spacePressed && !isMoving)
@@ -320,16 +277,16 @@ void Game::MoveTile()
 		{
 			spacePressed = true;
 
-			int cursorTileIndex = 0;
-			for (size_t i = 0; i < SIZE; i++)
+			int cursorIndex = 0;
+			for (int i = 0; i < SIZE; i++)
 			{
 				if (tiles[i].GetPos() == cursor)
 				{
-					cursorTileIndex = i;
+					cursorIndex = i;
 				}
 			}
 
-			const int GAP = tiles[SIZE - 1].GetPos();
+			const int GAP = tiles.back().GetPos();
 	
 			const int GAP_COL = GAP % COLS;
 			const int GAP_ROW = GAP / COLS;
@@ -361,8 +318,8 @@ void Game::MoveTile()
 						)
 					)
 				{
-					tiles[SIZE - 1].SetPosition(cursor);
-					tiles[cursorTileIndex].SetMove(GAP);
+					tiles.back().SetPosition(cursor, positions[cursor]);
+					tiles[cursorIndex].SetToMoving(GAP,positions[GAP]);
 					isMoving = true;
 				}
 			}
@@ -376,7 +333,7 @@ void Game::MoveTile()
 		}
 	}
 				
-	// do movement
+	// do tile movement
 	for (Tile& t : tiles)
 	{
 		if (t.IsMoving())
@@ -390,16 +347,36 @@ void Game::MoveTile()
 	}	
 }
 
-void Game::ResetTiles()
+void Game::CheckForGameOver()
+{
+	if (!gameOver)
+	{
+		int count = 0;
+		for (int i = 0; i < SIZE; i++)
+		{
+			if (tiles[i].GetPos() == i)
+			{
+				count++;
+			}
+			else
+			{
+				gameOver = false;
+				break;
+			}
+		}
+
+		if (count == SIZE) gameOver = true;
+	}
+}
+void Game::CheckForReset()
 {
 	if (!returnPressed)
 	{
 		if (wnd.kbd.KeyIsPressed(VK_RETURN))
 		{
 			returnPressed = true;
-			SetTileImage();
+			NextImage();
 			RandomiseTiles();
-			SetAdjacents();
 			gameOver = false;
 		}
 	}
@@ -411,33 +388,45 @@ void Game::ResetTiles()
 		}
 	}
 }
+void Game::CheckForExitGame()
+{
+	if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
+	{
+		wnd.Kill();
+	}
+}
 
 void Game::DrawTiles()
 {
 	for( const Tile& T : tiles )
 	{
-		if (T.GetTex() != SIZE - 1 || gameOver)
+		if (T.GetTex() != tiles.size() - 1 || gameOver)
 		{
-			gfx.DrawTile(T, images[imageNum]);
+			gfx.DrawTile(positions,texCoords,T, images[imageNum]);
 		}
 	}
 }
-
 void Game::DrawCursor()
 {
 	gfx.DrawRectangle(
 		false,
-		XOFF + cursor % COLS * WIDTH  + 10,
-		YOFF + cursor / COLS * HEIGHT + 10,
-		XOFF + cursor % COLS * WIDTH  + WIDTH  - 10,
-		YOFF + cursor / COLS * HEIGHT + HEIGHT - 10,
+		cursor % COLS * WIDTH  + 10,
+		cursor / COLS * HEIGHT + 10,
+		cursor % COLS * WIDTH  + WIDTH  - 10,
+		cursor / COLS * HEIGHT + HEIGHT - 10,
 		Red);
 }
-
-void Game::CloseGame()
+void Game::DrawTileBorders()
 {
-	if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
+	for (const Tile& T : tiles)
 	{
-		wnd.Kill();
+		if (T.GetTex() != tiles.size() - 1 || gameOver)
+		{
+			gfx.DrawRectangle(
+				false,
+				positions[T.GetPos()][0],
+				positions[T.GetPos()][3],
+				Black);
+		}
 	}
 }

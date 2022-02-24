@@ -67,13 +67,11 @@ public:
 	float timeOld	= 0.0f;
 	float timeNew	= 0.0f;
 
-	const int XOFF		= 50;
-	const int YOFF		= 50;
-	const int ROWS		= 5;
-	const int COLS		= 5;
+	const int ROWS		= 4;
+	const int COLS		= 3;
 	const int SIZE		= ROWS * COLS;
-	const int WIDTH		= (Graphics::WINDOW_HEIGHT - YOFF * 2) / ROWS;
-	const int HEIGHT	= WIDTH;
+	const int WIDTH		= Graphics::WINDOW_WIDTH / COLS;
+	const int HEIGHT	= Graphics::WINDOW_HEIGHT / ROWS;
 
 	const float XFRACTION = 1.0f / COLS;
 	const float YFRACTION = 1.0f / ROWS;
@@ -88,18 +86,36 @@ public:
 	void SetImages();
 	void SetTextureCoordinates();
 	void SetPositions();
-	void GetFrameTime();
-	void SetTileImage();
+	void RandomiseImage();
+	void NextImage();
 	void RandomiseTiles();
-	void SetAdjacents();
 
-	void CheckForGameOver();
+	void GetFrameTime();
+
 	void MoveCursor();
 	void MoveTile();
-	void ResetTiles();
+
+	void CheckForGameOver();
+	void CheckForReset();
+	void CheckForExitGame();
 
 	void DrawTiles();
 	void DrawCursor();
-
-	void CloseGame();
+	void DrawTileBorders();
 };
+
+/*
+
+NOTES:
+game can still create unsolvable random patterns
+
+TO DO:
+fix unsolvable patterns
+mouse control
+controller control
+select the difficulty (ie the number of rows and columns)
+save/load game
+add custom images
+work with looping video
+
+*/
