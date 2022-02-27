@@ -50,15 +50,18 @@ private:
 	Graphics gfx;
 
 public:
-	
+	int		increment		= 0;
 	int		imageNum		= 0;
 	int		cursor			= 0;
+
 	bool	arrowPressed	= false;
 	bool	spacePressed	= false;
 	bool	returnPressed	= false;
 	bool	keyPressed		= false;
+
 	bool	gameOver		= false;
 	bool	isMoving		= false;
+	bool	isSetUp			= false;
 			
 	std::vector<Surface> images;
 
@@ -67,14 +70,18 @@ public:
 	float timeOld	= 0.0f;
 	float timeNew	= 0.0f;
 
-	const int ROWS		= 4;
+	const int ROWS		= 3;
 	const int COLS		= 3;
 	const int SIZE		= ROWS * COLS;
-	const int WIDTH		= Graphics::WINDOW_WIDTH / COLS;
+	const int INCR_MAX	= SIZE * 3;
+	const int WIDTH		= (Graphics::WINDOW_WIDTH - 200) / COLS ;
 	const int HEIGHT	= Graphics::WINDOW_HEIGHT / ROWS;
 
 	const float XFRACTION = 1.0f / COLS;
 	const float YFRACTION = 1.0f / ROWS;
+
+	const std::array<int, 4> NUMBERS = { -1,1,-COLS,COLS };
+	int lastDir = 0;
 
 	std::vector<std::array<Math::Vector, 4>> positions;
 	std::vector<std::array<Math::Vector, 4>> texCoords;
@@ -88,7 +95,9 @@ public:
 	void SetPositions();
 	void RandomiseImage();
 	void NextImage();
-	void RandomiseTiles();
+
+	int	 GetTileIndex(const int& POS);
+	bool IsNextToGap(const int& POS);
 
 	void GetFrameTime();
 
@@ -96,8 +105,8 @@ public:
 	void MoveTile();
 
 	void CheckForGameOver();
-	void CheckForReset();
-	void CheckForExitGame();
+	void CheckForGameReset();
+	void CheckForGameExit();
 
 	void DrawTiles();
 	void DrawCursor();
@@ -107,15 +116,28 @@ public:
 /*
 
 NOTES:
-game can still create unsolvable random patterns
 
-TO DO:
-fix unsolvable patterns
+TO DO (BUGS):
+FIXED: unsolvable patterns
+FIXED: tiles no longer sliding
+FIXED: AI shouldn't be moving the same tile as the last moved tile
+FIXED: borders dissapearing before the last tile finishes moving
+FIXED: gap tile appearing before the last tile finishes moving
+FIXED: cursor now appears only after setup in the gap square
+
+TO DO (FEATURES):
+sounds
+victory animation
+move counter
+timer (start when first tile moved, stops when all tiles in correct possitions)
+convert tiles to greyscale that are in the wrong place
+auto solver
 mouse control
 controller control
-select the difficulty (ie the number of rows and columns)
+select the difficulty by increasing or decreasing the number of tiles moved at start
+select the number of rows and columns (min 2x2)
 save/load game
-add custom images
-work with looping video
+be able to add custom images
+looping video tiles / moving gif tiles
 
 */

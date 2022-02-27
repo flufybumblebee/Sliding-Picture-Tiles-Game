@@ -538,12 +538,12 @@ void Graphics::DrawTriangle( const bool& FILLED, const Vector& A, const Vector& 
 		DrawLineSegment( C, A, COLOR );
 	}	
 }
-void Graphics::DrawTile(const std::vector<std::array<Math::Vector,4>>& POSITIONS, const std::vector<std::array<Math::Vector,4>>& TEX_COORDS, const Tile& T, const Surface& IMAGE)
+void Graphics::DrawTile( const Tile& T, const Surface& IMAGE )
 {
-	const TextureVertex T0 = { POSITIONS[T.GetPos()][0],TEX_COORDS[T.GetTex()][0] };
-	const TextureVertex T1 = { POSITIONS[T.GetPos()][1],TEX_COORDS[T.GetTex()][1] };
-	const TextureVertex T2 = { POSITIONS[T.GetPos()][2],TEX_COORDS[T.GetTex()][2] };
-	const TextureVertex T3 = { POSITIONS[T.GetPos()][3],TEX_COORDS[T.GetTex()][3] };
+	const TextureVertex T0 = { T.GetPosition()[0], T.GetTexCoord()[0] };
+	const TextureVertex T1 = { T.GetPosition()[1], T.GetTexCoord()[1] };
+	const TextureVertex T2 = { T.GetPosition()[2], T.GetTexCoord()[2] };
+	const TextureVertex T3 = { T.GetPosition()[3], T.GetTexCoord()[3] };
 	DrawTriangleTex(T0, T1, T3, IMAGE);
 	DrawTriangleTex(T0, T3, T2, IMAGE);
 }

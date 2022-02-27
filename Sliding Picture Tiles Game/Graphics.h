@@ -174,11 +174,7 @@ public:
 		
 
 	// SPECIAL
-	void DrawTile(
-		const std::vector<std::array<Math::Vector, 4>>& POSITIONS,
-		const std::vector<std::array<Math::Vector, 4>>& TEX_COORDS,
-		const Tile& T,
-		const Surface& IMAGE);
+	void DrawTile(const Tile& T, const Surface& IMAGE);
 	void DrawVector( const Math::Vector& V, const Color& COLOR );
 	void DrawVector( const Math::Vector& A, const Math::Vector& B, const Color& COLOR );
 
@@ -249,7 +245,7 @@ private:
 	Color*	                                            pSysBuffer;
 
 public:
-	static constexpr int WINDOW_WIDTH = 500;
+	static constexpr int WINDOW_WIDTH = 700;
 	static constexpr int WINDOW_HEIGHT = 500;
 	static constexpr int WINDOW_LEFT = 0;
 	static constexpr int WINDOW_TOP = 0;

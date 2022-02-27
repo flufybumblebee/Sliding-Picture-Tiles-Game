@@ -7,50 +7,52 @@ class Tile
 public:
 	Tile(
 		const int& POSITION,
-		const std::array<Math::Vector, 4>& POSITIONS,
+		const std::vector<std::array<Math::Vector, 4>>& POSITIONS,
 		const int& TEX,
-		const std::array<Math::Vector, 4>& TEX_COORDS)
+		const std::vector<std::array<Math::Vector, 4>>& TEX_COORDS)
 		:
+		POSITIONS(POSITIONS),
 		TEX(TEX),
-		TEX_COORD(TEX_COORDS)
+		TEX_COORDS(TEX_COORDS)
 	{		
 		assert(POSITION >= 0);
 		assert(TEX >= 0);
-		SetPosition(POSITION, POSITIONS);
+		SetPosition(POSITION);
 	}
 	~Tile() = default;
 
 private:
-	static constexpr const float TIME_FOR_MOVE = 150.0f;
+	static constexpr const float TIME_FOR_MOVE = 250.0f;
 
 private:
 	const int	TEX;
-	const std::array<Math::Vector, 4> TEX_COORD;
 
 	int			pos				= 0;
+	int			startPos		= 0;
+	int			endPos			= 0;
 	bool		isMoving		= false;
 	float		timeRemaining	= TIME_FOR_MOVE;
 
 	std::array<Math::Vector, 4>	position;
-	std::array<Math::Vector, 4>	startPosition;
-	std::array<Math::Vector, 4>	endPosition;
+
+	const std::vector<std::array<Math::Vector, 4>>& POSITIONS;
+	const std::vector<std::array<Math::Vector, 4>>& TEX_COORDS;
 
 public:	
-	void	SetPosition(const int& POSITION, const std::array<Math::Vector,4>& POSITIONS)
+	void	SetPosition(const int& POSITION)
 	{		
 		pos = POSITION;
-		position = POSITIONS;
+		position = POSITIONS[POSITION];
 	}
-
-	void	SetToMoving(const int& I, const std::array<Math::Vector,4>& END_POSITION)
+	void	SetToMoving(const int& I)
 	{
 		if (!isMoving)
 		{
 			isMoving = true;
 
+			startPos = pos;
 			pos = I;
-			startPosition = position;
-			endPosition = END_POSITION;
+			endPos = I;
 
 			timeRemaining = TIME_FOR_MOVE;
 		}
@@ -62,17 +64,17 @@ public:
 
 		if (timeRemaining >= TIME)
 		{
-			position[0] = Math::Interpolate(startPosition[0], endPosition[0], alpha);
-			position[1] = Math::Interpolate(startPosition[1], endPosition[1], alpha);
-			position[2] = Math::Interpolate(startPosition[2], endPosition[2], alpha);
-			position[3] = Math::Interpolate(startPosition[3], endPosition[3], alpha);
+			position[0] = Math::Interpolate(POSITIONS[startPos][0], POSITIONS[endPos][0], alpha);
+			position[1] = Math::Interpolate(POSITIONS[startPos][1], POSITIONS[endPos][1], alpha);
+			position[2] = Math::Interpolate(POSITIONS[startPos][2], POSITIONS[endPos][2], alpha);
+			position[3] = Math::Interpolate(POSITIONS[startPos][3], POSITIONS[endPos][3], alpha);
 		}
 		else
 		{
-			position[0] = endPosition[0];
-			position[1] = endPosition[1];
-			position[2] = endPosition[2];
-			position[3] = endPosition[3];
+			position[0] = POSITIONS[endPos][0];
+			position[1] = POSITIONS[endPos][1];
+			position[2] = POSITIONS[endPos][2];
+			position[3] = POSITIONS[endPos][3];
 
 			isMoving = false;
 		}
@@ -90,19 +92,13 @@ public:
 	{
 		return isMoving;
 	}
-	
-	const Math::Vector& GetPosition(const int& I) const
-	{
-		assert(I >= 0);
-		assert(I <= 3);
 
-		return position[I];
+	const std::array<Math::Vector, 4>& GetPosition() const
+	{
+		return position;
 	}
-	const Math::Vector& GetTexCoord(const int& I) const
+	const std::array<Math::Vector, 4>& GetTexCoord() const
 	{
-		assert(I >= 0);
-		assert(I <= 3);
-
-		return TEX_COORD[I];
+		return TEX_COORDS[TEX];
 	}
 };

@@ -39,6 +39,11 @@ Game::Game(MainWindow& wnd)
 	wnd(wnd),
 	gfx(wnd)	
 {
+	SetImages();
+	SetTextureCoordinates();
+	SetPositions();
+	RandomiseImage();
+
 	SetTiles();
 
 	timer.StartWatch();
@@ -54,13 +59,75 @@ void Game::Go()
 
 void Game::Update()
 {
+	#ifdef NDEBUG
 	GetFrameTime();
+	#else
+	frameTime = 10.0f;
+	#endif
+	
+	if (!isSetUp)
+	{	
+		if (!isMoving)
+		{
+			std::vector<int> numbers = { 0,1,2,3 };
 
-	MoveCursor();	
-	MoveTile();
-	CheckForGameOver();
-	CheckForReset();
-	CheckForExitGame();
+			assert(numbers.size() == 4); 
+			if(lastDir == -1) numbers.erase(numbers.begin() + 1);
+			if(lastDir == 1) numbers.erase(numbers.begin() + 0);
+			if(lastDir == -COLS) numbers.erase(numbers.begin() + 3);
+			if(lastDir == COLS) numbers.erase(numbers.begin() + 2);
+
+			int randomNum = Random(0, (int)numbers.size() - 1);
+
+			const int GAP = tiles.back().GetPos();
+
+			while (!IsNextToGap(GAP + NUMBERS[numbers[randomNum]]))
+			{
+				numbers.erase(numbers.begin() + randomNum);
+				randomNum = Random(0, (int)numbers.size() - 1);
+			}
+
+			lastDir = NUMBERS[numbers[randomNum]];
+			const int NEXT_TO_GAP = GAP + NUMBERS[numbers[randomNum]];
+			const int INDEX = GetTileIndex(NEXT_TO_GAP);
+
+			tiles.back().SetPosition(NEXT_TO_GAP);
+			tiles[INDEX].SetToMoving(GAP);
+			isMoving = true;
+			
+			if (increment < INCR_MAX) increment++;
+		}
+		else
+		{
+			int j = 0;
+			for (size_t i = 0; i < tiles.size(); i++)
+			{
+				if (tiles[i].IsMoving())
+				{
+					tiles[i].Move(frameTime);
+					isMoving = true;
+					j++;
+				}
+			}
+
+			if (j == 0)
+			{
+				cursor = tiles.back().GetPos();
+				isMoving = false;
+				if(increment >= INCR_MAX) isSetUp = true;
+			}
+		}			
+	}
+	else
+	{
+		MoveCursor();
+		MoveTile();
+
+		if(!isMoving) CheckForGameOver();
+		CheckForGameReset();
+	}
+
+	CheckForGameExit();
 }
 
 void Game::Draw()
@@ -69,21 +136,13 @@ void Game::Draw()
 		
 	if (!gameOver)
 	{
-		DrawCursor();
+		if(isSetUp) DrawCursor();
 		DrawTileBorders();
 	}
 }
 
 //---------------------------------------------------
 
-void Game::SetTiles()
-{
-	SetImages();
-	SetTextureCoordinates();
-	SetPositions();
-	RandomiseImage();
-	RandomiseTiles();
-}
 
 void Game::SetImages()
 {
@@ -161,6 +220,21 @@ void Game::SetPositions()
 	}
 }
 
+void Game::SetTiles()
+{
+	tiles.clear();
+	assert(tiles.empty() == true);
+	for (int i = 0; i < SIZE; i++)
+	{
+		tiles.push_back({
+			i,
+			positions,
+			i,
+			texCoords});
+	}
+	assert(tiles.size() == SIZE);
+}
+
 void Game::NextImage()
 {
 	imageNum++;
@@ -173,34 +247,38 @@ void Game::RandomiseImage()
 		imageNum = Math::Random(0, (int)images.size() - 1);
 	}
 }
-void Game::RandomiseTiles()
+
+int  Game::GetTileIndex(const int& POS)
 {
-	tiles.clear();
-
-	std::vector<int> numbers;
-
 	for (int i = 0; i < SIZE; i++)
 	{
-		numbers.push_back(i);
+		if (tiles[i].GetPos() == POS)
+		{
+			return i;
+		}
 	}
 
-	assert(numbers.size() == SIZE);
+	return -1;
+}
+bool Game::IsNextToGap(const int& POS)
+{
+	if (POS < 0 || POS > tiles.size() - 1) return false;
+	
+	const int GAP = tiles.back().GetPos();
 
-	for (int i = 0; i < SIZE; i++)
-	{
-		const int RANDOM_NUMBER = Random(0, (int)numbers.size() - 1);
-		const int POSITION = numbers[RANDOM_NUMBER];
-		tiles.push_back({
-			POSITION,
-			positions[POSITION],
-			i,
-			texCoords[i]});
+	if (GAP == POS) return false;
 
-		numbers.erase(numbers.begin() + RANDOM_NUMBER);
-	}
-
-	assert(numbers.empty() == true);
-	assert(tiles.size() == SIZE);
+	const int GAP_COL = GAP % COLS;
+	const int POS_COL = POS % COLS;
+	
+	if (GAP_COL == POS_COL && (POS == GAP + COLS || POS == GAP - COLS)) return true;
+	
+	const int GAP_ROW = GAP / COLS;
+	const int POS_ROW = POS / COLS;
+	
+	if (GAP_ROW == POS_ROW && (POS == GAP + 1 || POS == GAP - 1)) return true;
+		
+	return false;
 }
 
 void Game::GetFrameTime()
@@ -277,52 +355,16 @@ void Game::MoveTile()
 		{
 			spacePressed = true;
 
-			int cursorIndex = 0;
-			for (int i = 0; i < SIZE; i++)
-			{
-				if (tiles[i].GetPos() == cursor)
-				{
-					cursorIndex = i;
-				}
-			}
+			const int CUR_INDEX = GetTileIndex(cursor);
 
 			const int GAP = tiles.back().GetPos();
-	
-			const int GAP_COL = GAP % COLS;
-			const int GAP_ROW = GAP / COLS;
 
-			const int CUR_COL = cursor % COLS;
-			const int CUR_ROW = cursor / COLS;
-
-			const bool CURSOR_LEFT_OF_GAP = cursor == GAP - 1;
-			const bool CURSOR_RIGHT_OF_GAP = cursor == GAP + 1;
-			const bool CURSOR_IN_SAME_ROW_AS_GAP = CUR_ROW == GAP_ROW;
-
-			const bool CURSOR_ABOVE_GAP = cursor == GAP - COLS;
-			const bool CURSOR_BELOW_GAP = cursor == GAP + COLS;
-			const bool CURSOR_IN_SAME_COLUMN_AS_GAP = CUR_COL == GAP_COL;
-
-			if (GAP != cursor)
+			if (IsNextToGap(cursor))
 			{
-				if (
-						(
-							(CURSOR_LEFT_OF_GAP || CURSOR_RIGHT_OF_GAP)  
-							&& 
-							CURSOR_IN_SAME_ROW_AS_GAP
-						)
-						||
-						(	
-							(CURSOR_ABOVE_GAP || CURSOR_BELOW_GAP)
-							&& 
-							CURSOR_IN_SAME_COLUMN_AS_GAP
-						)
-					)
-				{
-					tiles.back().SetPosition(cursor, positions[cursor]);
-					tiles[cursorIndex].SetToMoving(GAP,positions[GAP]);
-					isMoving = true;
-				}
-			}
+				tiles.back().SetPosition(cursor);
+				tiles[CUR_INDEX].SetToMoving(GAP);
+				isMoving = true;
+			}			
 		}		
 	}
 	else
@@ -334,7 +376,7 @@ void Game::MoveTile()
 	}
 				
 	// do tile movement
-	for (Tile& t : tiles)
+	/*for (Tile& t : tiles)
 	{
 		if (t.IsMoving())
 		{
@@ -344,7 +386,23 @@ void Game::MoveTile()
 		{
 			isMoving = false;
 		}
-	}	
+	}	*/
+
+	int j = 0;
+	for (size_t i = 0; i < tiles.size(); i++)
+	{
+		if (tiles[i].IsMoving())
+		{
+			tiles[i].Move(frameTime);
+			isMoving = true;
+			j++;
+		}
+	}
+
+	if (j == 0)
+	{
+		isMoving = false;
+	}
 }
 
 void Game::CheckForGameOver()
@@ -368,16 +426,18 @@ void Game::CheckForGameOver()
 		if (count == SIZE) gameOver = true;
 	}
 }
-void Game::CheckForReset()
+void Game::CheckForGameReset()
 {
 	if (!returnPressed)
 	{
 		if (wnd.kbd.KeyIsPressed(VK_RETURN))
 		{
 			returnPressed = true;
-			NextImage();
-			RandomiseTiles();
 			gameOver = false;
+			isSetUp = false;
+			increment = 0;
+			NextImage();
+			SetTiles();
 		}
 	}
 	else
@@ -388,7 +448,7 @@ void Game::CheckForReset()
 		}
 	}
 }
-void Game::CheckForExitGame()
+void Game::CheckForGameExit()
 {
 	if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
 	{
@@ -402,7 +462,7 @@ void Game::DrawTiles()
 	{
 		if (T.GetTex() != tiles.size() - 1 || gameOver)
 		{
-			gfx.DrawTile(positions,texCoords,T, images[imageNum]);
+			gfx.DrawTile(T, images[imageNum]);
 		}
 	}
 }
@@ -424,8 +484,8 @@ void Game::DrawTileBorders()
 		{
 			gfx.DrawRectangle(
 				false,
-				positions[T.GetPos()][0],
-				positions[T.GetPos()][3],
+				T.GetPosition()[0],
+				T.GetPosition()[3],
 				Black);
 		}
 	}
