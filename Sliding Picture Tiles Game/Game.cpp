@@ -44,6 +44,11 @@ Game::Game(MainWindow& wnd)
 	wnd(wnd),
 	gfx(wnd)	
 {
+	backgroundImages.push_back(Surface::FromFile(L"Images\\woven.jpg"));
+	backgroundImages.push_back(Surface::FromFile(L"Images\\swirl.jpg"));
+	backgroundImages.push_back(Surface::FromFile(L"Images\\wooden_boards.jpg"));
+	backgroundImages.push_back(Surface::FromFile(L"Images\\shell.jpg"));
+
 	SetImages();
 	SetTextureCoordinates();
 	SetPositions();
@@ -67,7 +72,7 @@ void Game::Update()
 	#ifdef NDEBUG
 	GetFrameTime();
 	#else
-	frameTime = 10.0f;
+	frameTime = FRAME_TIME;
 	#endif
 	
 	if (!isSetUp)
@@ -137,6 +142,8 @@ void Game::Update()
 
 void Game::Draw()
 {
+	DrawBackground();
+
 	DrawTiles();
 		
 	if (!gameOver)
@@ -151,10 +158,10 @@ void Game::Draw()
 
 void Game::SetImages()
 {
-	images.push_back(Surface::FromFile(L"Images\\mountain.jpg"));
-	images.push_back(Surface::FromFile(L"Images\\earth.jpg"));
-	images.push_back(Surface::FromFile(L"Images\\squirrel.jpg"));
-	images.push_back(Surface::FromFile(L"Images\\pretty.jpg"));
+	tileImages.push_back(Surface::FromFile(L"Images\\mountain.jpg"));
+	tileImages.push_back(Surface::FromFile(L"Images\\earth.jpg"));
+	tileImages.push_back(Surface::FromFile(L"Images\\squirrel.jpg"));
+	tileImages.push_back(Surface::FromFile(L"Images\\pretty.jpg"));
 }
 
 void Game::SetTextureCoordinates()
@@ -205,17 +212,22 @@ void Game::SetPositions()
 	Vector bottomLeft;
 	Vector bottomRight;
 
+	float left = 0;
+	float top = 0;
+	float right = 0;
+	float bottom = 0;
+
 	for (int i = 0; i < SIZE; i++)
 	{
-		const float LEFT = float(WIDTH * (i % COLS));
-		const float TOP = float(HEIGHT * (i / COLS));
-		const float RIGHT = LEFT + WIDTH;
-		const float BOTTOM = TOP + HEIGHT;
+		left = float(WIDTH * (i % COLS)) + OFFSET;
+		top = float(HEIGHT * (i / COLS)) + OFFSET;
+		right = left + WIDTH;
+		bottom = top + HEIGHT;
 
-		topLeft = {	LEFT, TOP };
-		topRight = { RIGHT, TOP }; 
-		bottomLeft = { LEFT, BOTTOM };
-		bottomRight = {	RIGHT, BOTTOM };
+		topLeft = {	left, top };
+		topRight = { right, top }; 
+		bottomLeft = { left, bottom };
+		bottomRight = {	right, bottom };
 
 		positions.push_back({
 			topLeft,
@@ -232,6 +244,7 @@ void Game::SetTiles()
 	for (int i = 0; i < SIZE; i++)
 	{
 		tiles.push_back({
+			TILE_SPEED,
 			i,
 			positions,
 			i,
@@ -243,13 +256,13 @@ void Game::SetTiles()
 void Game::NextImage()
 {
 	imageNum++;
-	if (imageNum >= images.size()) imageNum = 0;
+	if (imageNum >= tileImages.size()) imageNum = 0;
 }
 void Game::RandomiseImage()
 {
-	if (!images.empty())
+	if (!tileImages.empty())
 	{
-		imageNum = Math::Random(0, (int)images.size() - 1);
+		imageNum = Math::Random(0, (int)tileImages.size() - 1);
 	}
 }
 
@@ -429,7 +442,7 @@ void Game::MoveTile()
 					{
 						tiles.back().SetPosition(cursor);
 						tiles[CUR_INDEX].SetToMoving(GAP);
-						PlaySound(L"Sounds\\pop1.wav", NULL, SND_ASYNC);
+						PlaySound(L"Sounds\\click3.wav", NULL, SND_ASYNC);
 						isMoving = true;
 					}
 				}
@@ -481,7 +494,7 @@ void Game::CheckForGameOver()
 
 		if (count == SIZE) gameOver = true;
 
-		if (gameOver) soundPlayed = PlaySound(L"Sounds\\success3.wav", NULL, SND_ASYNC);
+		if (gameOver) soundPlayed = PlaySound(L"Sounds\\confirmation.wav", NULL, SND_ASYNC);
 	}
 }
 void Game::CheckForGameReset()
@@ -520,7 +533,7 @@ void Game::DrawTiles()
 	{
 		if (T.GetTex() != tiles.size() - 1 || gameOver)
 		{
-			gfx.DrawTile(T, images[imageNum]);
+			gfx.DrawTile(T, tileImages[imageNum]);
 		}
 	}
 }
@@ -528,10 +541,10 @@ void Game::DrawCursor()
 {
 	gfx.DrawRectangle(
 		false,
-		cursor % COLS * WIDTH  + 10,
-		cursor / COLS * HEIGHT + 10,
-		cursor % COLS * WIDTH  + WIDTH  - 10,
-		cursor / COLS * HEIGHT + HEIGHT - 10,
+		(int)positions[cursor][0].x + CURSOR_OFFSET,
+		(int)positions[cursor][0].y + CURSOR_OFFSET,
+		(int)positions[cursor][3].x - CURSOR_OFFSET,
+		(int)positions[cursor][3].y - CURSOR_OFFSET,
 		Red);
 }
 void Game::DrawTileBorders()
@@ -545,6 +558,49 @@ void Game::DrawTileBorders()
 				T.GetPosition()[0],
 				T.GetPosition()[3],
 				Black);
+		}
+	}
+}
+
+void Game::DrawBackground()
+{
+	Math::TextureVertex topleft;
+	Math::TextureVertex topright;
+	Math::TextureVertex bottomleft;
+	Math::TextureVertex bottomright;
+
+	const int ROWS = 2;
+	const int COLS = 3;
+	const float ROW_HEIGHT = (float)Graphics::WINDOW_HEIGHT / ROWS;
+	const float COL_WIDTH = (float)Graphics::WINDOW_WIDTH / COLS;
+
+	const Vector TOP_LEFT = { 0.0f,0.0f };
+	const Vector TOP_RIGHT = { 1.0f,0.0f };
+	const Vector BOTTOM_LEFT = { 0.0f,1.0f };
+	const Vector BOTTOM_RIGHT = { 1.0f,1.0f };
+
+	float left = 0;
+	float top = 0;
+	float right = 0;
+	float bottom = 0;
+
+	for (int row = 0; row < ROWS; row++)
+	{
+		for (int col = 0; col < COLS; col++)
+		{
+			left = col * COL_WIDTH;
+			top = row * ROW_HEIGHT;
+			right = left + COL_WIDTH;
+			bottom = top + ROW_HEIGHT;
+
+			topleft = { {left, top}, TOP_LEFT };
+			topright = { {right, top},TOP_RIGHT };
+			bottomleft = { {left, bottom},BOTTOM_LEFT};
+			bottomright = { {right, bottom},BOTTOM_RIGHT };
+
+			const int NUM = 2;
+			gfx.DrawTriangleTex(topleft, topright, bottomleft, backgroundImages[NUM]);
+			gfx.DrawTriangleTex(topright, bottomright, bottomleft, backgroundImages[NUM]);
 		}
 	}
 }

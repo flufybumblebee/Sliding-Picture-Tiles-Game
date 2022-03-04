@@ -5,12 +5,13 @@
 class Tile
 {
 public:
-	Tile(
+	Tile(const float TIME_FOR_MOVE,
 		const int& POSITION,
 		const std::vector<std::array<Math::Vector, 4>>& POSITIONS,
 		const int& TEX,
 		const std::vector<std::array<Math::Vector, 4>>& TEX_COORDS)
 		:
+		TIME_FOR_MOVE(TIME_FOR_MOVE),
 		POSITIONS(POSITIONS),
 		TEX(TEX),
 		TEX_COORDS(TEX_COORDS)
@@ -21,17 +22,16 @@ public:
 	}
 	~Tile() = default;
 
-private:
-	static constexpr const float TIME_FOR_MOVE = 250.0f;
 
 private:
+	const float TIME_FOR_MOVE;
 	const int	TEX;
 
 	int			pos				= 0;
 	int			startPos		= 0;
 	int			endPos			= 0;
 	bool		isMoving		= false;
-	float		timeRemaining	= TIME_FOR_MOVE;
+	float		timeRemaining	= 0;
 
 	std::array<Math::Vector, 4>	position;
 

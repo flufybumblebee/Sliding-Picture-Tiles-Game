@@ -68,8 +68,11 @@ public:
 	bool	isSetUp			= false;
 
 	bool	soundPlayed		= false;
+
+	const float FRAME_TIME = 15.0f;
 			
-	std::vector<Surface> images;
+	std::vector<Surface> tileImages;
+	std::vector<Surface> backgroundImages;
 
 	Timer timer;
 	float frameTime	= 0.0f;
@@ -80,11 +83,15 @@ public:
 	const int COLS		= 3;
 	const int SIZE		= ROWS * COLS;
 	const int INCR_MAX	= SIZE * 1;
-	const int WIDTH		= (Graphics::WINDOW_WIDTH - 200) / COLS ;
-	const int HEIGHT	= Graphics::WINDOW_HEIGHT / ROWS;
+	const int OFFSET	= 25;
+	const int WIDTH		= (Graphics::WINDOW_WIDTH - (OFFSET * 2) - 200) / COLS;
+	const int HEIGHT	= (Graphics::WINDOW_HEIGHT - (OFFSET * 2)) / ROWS;
 
 	const float XFRACTION = 1.0f / COLS;
 	const float YFRACTION = 1.0f / ROWS;
+	
+	const int	CURSOR_OFFSET	= 10;
+	const float TILE_SPEED		= 150.0f;
 
 	const std::array<int, 4> NUMBERS = { -1,1,-COLS,COLS };
 	int lastDir = 0;
@@ -114,6 +121,7 @@ public:
 	void CheckForGameReset();
 	void CheckForGameExit();
 
+	void DrawBackground();
 	void DrawTiles();
 	void DrawCursor();
 	void DrawTileBorders();
@@ -133,17 +141,20 @@ FIXED: cursor now appears only after setup in the gap square
 
 TO DO (FEATURES):
 DONE: mouse support 
-sounds
-victory animation
+DONE: sounds
 move counter
 timer (start when first tile moved, stops when all tiles in correct possitions)
-convert tiles to greyscale that are in the wrong place
-auto solver
-controller support
 select the difficulty by increasing or decreasing the number of tiles moved at start
 select the number of rows and columns (min 2x2)
-save/load game
+
+TO DO (SPECIAL FEATURES):
 be able to add custom images
+save/load game
+controller support
+auto solver
+convert tiles to greyscale that are in the wrong place
+victory animation
 looping video tiles / moving gif tiles
+use still image from a video for the tiles then play the video when completed 
 
 */
