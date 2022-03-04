@@ -66,6 +66,8 @@ public:
 	bool	gameOver		= false;
 	bool	isMoving		= false;
 	bool	isSetUp			= false;
+
+	bool	soundPlayed		= false;
 			
 	std::vector<Surface> images;
 
@@ -77,7 +79,7 @@ public:
 	const int ROWS		= 3;
 	const int COLS		= 3;
 	const int SIZE		= ROWS * COLS;
-	const int INCR_MAX	= SIZE * 3;
+	const int INCR_MAX	= SIZE * 1;
 	const int WIDTH		= (Graphics::WINDOW_WIDTH - 200) / COLS ;
 	const int HEIGHT	= Graphics::WINDOW_HEIGHT / ROWS;
 
@@ -130,14 +132,14 @@ FIXED: gap tile appearing before the last tile finishes moving
 FIXED: cursor now appears only after setup in the gap square
 
 TO DO (FEATURES):
+DONE: mouse support 
 sounds
 victory animation
 move counter
 timer (start when first tile moved, stops when all tiles in correct possitions)
 convert tiles to greyscale that are in the wrong place
 auto solver
-mouse control
-controller control
+controller support
 select the difficulty by increasing or decreasing the number of tiles moved at start
 select the number of rows and columns (min 2x2)
 save/load game

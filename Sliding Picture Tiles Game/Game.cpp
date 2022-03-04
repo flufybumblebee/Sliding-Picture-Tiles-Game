@@ -28,6 +28,11 @@
 #include <string>
 #include <sstream>
 
+#include <Mmsystem.h>
+#include <mciapi.h>
+
+#pragma comment(lib, "Winmm.lib")
+
 using namespace Math;
 using namespace Testing;
 using namespace Colors;
@@ -120,7 +125,7 @@ void Game::Update()
 	}
 	else
 	{
-		MoveCursor();
+		if(!gameOver) MoveCursor();
 		MoveTile();
 
 		if(!isMoving) CheckForGameOver();
@@ -424,6 +429,7 @@ void Game::MoveTile()
 					{
 						tiles.back().SetPosition(cursor);
 						tiles[CUR_INDEX].SetToMoving(GAP);
+						PlaySound(L"Sounds\\pop1.wav", NULL, SND_ASYNC);
 						isMoving = true;
 					}
 				}
@@ -474,6 +480,8 @@ void Game::CheckForGameOver()
 		}
 
 		if (count == SIZE) gameOver = true;
+
+		if (gameOver) soundPlayed = PlaySound(L"Sounds\\success3.wav", NULL, SND_ASYNC);
 	}
 }
 void Game::CheckForGameReset()
