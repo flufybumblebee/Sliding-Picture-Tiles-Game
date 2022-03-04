@@ -70,12 +70,12 @@ void Game::Update()
 		if (!isMoving)
 		{
 			std::vector<int> numbers = { 0,1,2,3 };
+			assert(numbers.size() == 4);
 
-			assert(numbers.size() == 4); 
-			if(lastDir == -1) numbers.erase(numbers.begin() + 1);
-			if(lastDir == 1) numbers.erase(numbers.begin() + 0);
-			if(lastDir == -COLS) numbers.erase(numbers.begin() + 3);
-			if(lastDir == COLS) numbers.erase(numbers.begin() + 2);
+			if(lastDir == 1)		numbers.erase(numbers.begin() + 0);
+			if(lastDir == -1)		numbers.erase(numbers.begin() + 1);
+			if(lastDir == COLS)		numbers.erase(numbers.begin() + 2);
+			if(lastDir == -COLS)	numbers.erase(numbers.begin() + 3);
 
 			int randomNum = Random(0, (int)numbers.size() - 1);
 
@@ -290,104 +290,154 @@ void Game::GetFrameTime()
 
 void Game::MoveCursor()
 {
-	if (!arrowPressed)
+	if (isKeyboard)
 	{
-		/**/ if (wnd.kbd.KeyIsPressed(VK_LEFT))
+		if (!arrowPressed)
 		{
-			arrowPressed = true;
-			int count = 0;
-			for (int i = 0; i < COLS; i++)
+			/**/ if (wnd.kbd.KeyIsPressed(VK_LEFT))
 			{
-				if (cursor != i * COLS)
+				arrowPressed = true;
+				int count = 0;
+				for (int i = 0; i < COLS; i++)
 				{
-					count++;
+					if (cursor != i * COLS)
+					{
+						count++;
+					}
+				}
+				if (count == COLS) cursor--;
+			}
+			else if (wnd.kbd.KeyIsPressed(VK_RIGHT))
+			{
+				arrowPressed = true;
+				int count = 0;
+				for (int i = 1; i <= COLS; i++)
+				{
+					int j = i * COLS - 1;
+					if (cursor != j)
+					{
+						count++;
+					}
+				}
+				if (count == COLS) cursor++;
+			}
+			else if (wnd.kbd.KeyIsPressed(VK_UP))
+			{
+				arrowPressed = true;
+				if (cursor > COLS - 1)
+				{
+					cursor -= COLS;
 				}
 			}
-			if (count == COLS) cursor--;
-		}
-		else if (wnd.kbd.KeyIsPressed(VK_RIGHT))
-		{
-			arrowPressed = true;
-			int count = 0;
-			for (int i = 1; i <= COLS; i++)
+			else if (wnd.kbd.KeyIsPressed(VK_DOWN))
 			{
-				int j = i * COLS - 1;
-				if (cursor != j)
+				arrowPressed = true;
+				if (cursor < (ROWS - 1) * COLS)
 				{
-					count++;
+					cursor += COLS;
 				}
 			}
-			if (count == COLS) cursor++;
-		}
-		else if (wnd.kbd.KeyIsPressed(VK_UP))
-		{
-			arrowPressed = true;
-			if (cursor > COLS - 1)
-			{
-				cursor -= COLS;
-			}
-		}
-		else if (wnd.kbd.KeyIsPressed(VK_DOWN))
-		{
-			arrowPressed = true;
-			if (cursor < (ROWS - 1) * COLS)
-			{
-				cursor += COLS;
-			}
-		}		
-	}
-	else
-	{
-		if (!wnd.kbd.KeyIsPressed(VK_LEFT) &&
-			!wnd.kbd.KeyIsPressed(VK_RIGHT) &&
-			!wnd.kbd.KeyIsPressed(VK_UP) &&
-			!wnd.kbd.KeyIsPressed(VK_DOWN))
-		{
-			arrowPressed = false;
-		}
-	}
-}
-void Game::MoveTile()
-{
-	if (!spacePressed && !isMoving)
-	{
-		if (wnd.kbd.KeyIsPressed(VK_SPACE))
-		{
-			spacePressed = true;
-
-			const int CUR_INDEX = GetTileIndex(cursor);
-
-			const int GAP = tiles.back().GetPos();
-
-			if (IsNextToGap(cursor))
-			{
-				tiles.back().SetPosition(cursor);
-				tiles[CUR_INDEX].SetToMoving(GAP);
-				isMoving = true;
-			}			
-		}		
-	}
-	else
-	{
-		if (!wnd.kbd.KeyIsPressed(VK_SPACE))
-		{
-			spacePressed = false;
-		}
-	}
-				
-	// do tile movement
-	/*for (Tile& t : tiles)
-	{
-		if (t.IsMoving())
-		{
-			t.Move(frameTime);
 		}
 		else
 		{
-			isMoving = false;
+			if (!wnd.kbd.KeyIsPressed(VK_LEFT) &&
+				!wnd.kbd.KeyIsPressed(VK_RIGHT) &&
+				!wnd.kbd.KeyIsPressed(VK_UP) &&
+				!wnd.kbd.KeyIsPressed(VK_DOWN))
+			{
+				arrowPressed = false;
+			}
 		}
-	}	*/
+	}
+	else
+	{
+		if (wnd.mouse.IsInWindow())
+		{
+			const int MOUSE_X = wnd.mouse.GetPosX();
+			const int MOUSE_Y = wnd.mouse.GetPosY();
 
+			int left = 0;
+			int top = 0;
+			int right = 0;
+			int bottom = 0;
+
+			for (const Tile& T : tiles)
+			{
+				left = (int)T.GetPosition()[0].x;
+				top = (int)T.GetPosition()[0].y;
+				right = (int)T.GetPosition()[3].x;
+				bottom = (int)T.GetPosition()[3].y;
+
+				if (MOUSE_X >= left && MOUSE_X <= right && MOUSE_Y >= top && MOUSE_Y <= bottom)
+				{
+					cursor = T.GetPos();
+				}
+			}
+		}
+	}	
+}
+void Game::MoveTile()
+{
+	if (!isMoving)
+	{
+		if (isKeyboard)
+		{
+			if (!spacePressed)
+			{
+				if (wnd.kbd.KeyIsPressed(VK_SPACE))
+				{
+					spacePressed = true;
+
+					const int CUR_INDEX = GetTileIndex(cursor);
+
+					const int GAP = tiles.back().GetPos();
+
+					if (IsNextToGap(cursor))
+					{
+						tiles.back().SetPosition(cursor);
+						tiles[CUR_INDEX].SetToMoving(GAP);
+						isMoving = true;
+					}
+				}
+			}
+			else
+			{
+				if (!wnd.kbd.KeyIsPressed(VK_SPACE))
+				{
+					spacePressed = false;
+				}
+			}
+		}
+		else
+		{
+			if (!mousePressed)
+			{
+				if (wnd.mouse.LeftIsPressed())
+				{
+					mousePressed = true;
+
+					const int CUR_INDEX = GetTileIndex(cursor);
+
+					const int GAP = tiles.back().GetPos();
+
+					if (IsNextToGap(cursor))
+					{
+						tiles.back().SetPosition(cursor);
+						tiles[CUR_INDEX].SetToMoving(GAP);
+						isMoving = true;
+					}
+				}
+			}
+			else
+			{
+				if (!wnd.mouse.LeftIsPressed())
+				{
+					mousePressed = false;
+				}
+			}
+		}
+	}
+	
 	int j = 0;
 	for (size_t i = 0; i < tiles.size(); i++)
 	{

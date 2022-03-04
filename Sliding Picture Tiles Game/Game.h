@@ -54,10 +54,14 @@ public:
 	int		imageNum		= 0;
 	int		cursor			= 0;
 
+	bool	isKeyboard		= false;
+
 	bool	arrowPressed	= false;
 	bool	spacePressed	= false;
 	bool	returnPressed	= false;
 	bool	keyPressed		= false;
+
+	bool	mousePressed	= false;
 
 	bool	gameOver		= false;
 	bool	isMoving		= false;
