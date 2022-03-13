@@ -32,8 +32,6 @@
 #include <array>
 #include <vector>
 #include <string>
-#include <list>
-#include <queue>
 
 class Game
 {
@@ -50,17 +48,24 @@ private:
 	Graphics gfx;
 
 public:
-	int		increment		= 0;
-	int		imageNum		= 0;
-	int		cursor			= 0;
+	Timer timer;
+
+	float	frameTime	= 0.0f;
+	float	timeOld		= 0.0f;
+	float	timeNew		= 0.0f;
+
+	int		nMoves		= 0;
+	int		imageNum	= 0;
+	int		cursor		= 0;	
+	int		prevDir		= 0;
 
 	bool	isKeyboard		= false;
 
 	bool	arrowPressed	= false;
 	bool	spacePressed	= false;
 	bool	returnPressed	= false;
-	bool	keyPressed		= false;
 
+	bool	keyPressed		= false;
 	bool	mousePressed	= false;
 
 	bool	gameOver		= false;
@@ -69,45 +74,49 @@ public:
 
 	bool	soundPlayed		= false;
 
-	const float FRAME_TIME = 15.0f;
-			
-	std::vector<Surface> tileImages;
-	std::vector<Surface> backgroundImages;
-
-	Timer timer;
-	float frameTime	= 0.0f;
-	float timeOld	= 0.0f;
-	float timeNew	= 0.0f;
-
-	const int ROWS		= 3;
-	const int COLS		= 3;
-	const int SIZE		= ROWS * COLS;
-	const int INCR_MAX	= SIZE * 1;
-	const int OFFSET	= 25;
-	const int WIDTH		= (Graphics::WINDOW_WIDTH - (OFFSET * 2) - 200) / COLS;
-	const int HEIGHT	= (Graphics::WINDOW_HEIGHT - (OFFSET * 2)) / ROWS;
-
-	const float XFRACTION = 1.0f / COLS;
-	const float YFRACTION = 1.0f / ROWS;
+	const float FRAME_TIME = 15.0f;	
 	
-	const int	CURSOR_OFFSET	= 10;
-	const float TILE_SPEED		= 150.0f;
+	int rows = 3;
+	int cols = 3;
 
-	const std::array<int, 4> NUMBERS = { -1,1,-COLS,COLS };
-	int lastDir = 0;
+	//const int MOVES_MAX	= SIZE * 3;
 
-	std::vector<std::array<Math::Vector, 4>> positions;
-	std::vector<std::array<Math::Vector, 4>> texCoords;
+	std::vector<Surface> backgroundImages;
+	std::vector<Surface> buttonImages;
+	std::vector<Surface> tileImages;
 
+	std::vector<std::array<Math::Vector, 4>> buttonPositions;
+	std::vector<std::array<Math::Vector, 4>> tilePositions;
+	std::vector<std::array<Math::Vector, 4>> tileTexCoords;
 	std::vector <Tile> tiles;
 
+	Math::RectI tileRect;
+
+	enum class ControlState
+	{
+		Mouse,
+		Keyboard,
+		Controller
+	} controlState;
+
+	enum class GameState
+	{
+		Settings,
+		Setup,
+		Play
+	} gameState;
+
 public:
+	void SetBackgroundImages();
+	void SetButtonImages();
+	void SetTileImages();
+
+	void SetButtonPositions();
+	void SetTileTextureCoordinates();
+	void SetTilePositions();
 	void SetTiles();
-	void SetImages();
-	void SetTextureCoordinates();
-	void SetPositions();
-	void RandomiseImage();
-	void NextImage();
+	void RandomiseTileImage();
+	void NextTileImage();
 
 	int	 GetTileIndex(const int& POS);
 	bool IsNextToGap(const int& POS);
@@ -122,6 +131,13 @@ public:
 	void CheckForGameExit();
 
 	void DrawBackground();
+	void DrawCounter();
+	void DrawTimer();
+	void DrawButtonSettings();
+	void DrawButtonMouse();
+	void DrawButtonKeyboard();
+	void DrawButtonController();
+	void DrawSettings();
 	void DrawTiles();
 	void DrawCursor();
 	void DrawTileBorders();
@@ -138,14 +154,17 @@ FIXED: AI shouldn't be moving the same tile as the last moved tile
 FIXED: borders dissapearing before the last tile finishes moving
 FIXED: gap tile appearing before the last tile finishes moving
 FIXED: cursor now appears only after setup in the gap square
+is cursor is on a tile and the mouse moves off that tile and...
+... the mouse is clicked the tile still moves
 
 TO DO (FEATURES):
+DONE: keyboard support
 DONE: mouse support 
 DONE: sounds
 move counter
 timer (start when first tile moved, stops when all tiles in correct possitions)
-select the difficulty by increasing or decreasing the number of tiles moved at start
-select the number of rows and columns (min 2x2)
+select the number of tiles
+select the number of tile shuffles
 
 TO DO (SPECIAL FEATURES):
 be able to add custom images

@@ -394,6 +394,82 @@ void Graphics::EndFrame()
 	}
 }
 
+// Modifying Functions
+void Graphics::Blur()
+{
+	const int W = WINDOW_WIDTH;
+	const int H = WINDOW_HEIGHT;
+	int i = 0;
+
+	std::vector<Color> pixels;
+
+	unsigned int r = 0;
+	unsigned int g = 0;
+	unsigned int b = 0;
+
+	const std::array<int, 3> X = { -1,0,1 };
+	const std::array<int, 3> Y = { -W,0,W };
+	const std::array<float, 9> K = { 
+		1.0f,1.0f,1.0f,
+		1.0f,1.0f,1.0f,
+		1.0f,1.0f,1.0f };
+
+	float divide = 0.0f;
+	for (int i = 0; i < K.size(); i++)
+	{
+		divide += K[i];
+	}
+
+	for (int y = 0; y < H; y++)
+	{
+		for (int x = 0; x < W; x++)
+		{
+			i = y * W + x;
+
+			if (x == 0 || x == W - 1 || y == 0 || y == H - 1)
+			{
+				pixels.push_back(pSysBuffer[i]);
+			}
+			else
+			{
+				r = 0;
+				g = 0;
+				b = 0;
+
+				int l = 0;
+				for (int k = 0; k < 3; k++)
+				{
+					for (int j = 0; j < 3; j++)
+					{
+						l = k * 3 + j;
+						r += int(pSysBuffer[i + X[j] + Y[k]].GetR() * K[l]);
+						g += int(pSysBuffer[i + X[j] + Y[k]].GetG() * K[l]);
+						b += int(pSysBuffer[i + X[j] + Y[k]].GetB() * K[l]);
+					}
+				}
+
+				const unsigned char R = unsigned char(r / divide);
+				const unsigned char G = unsigned char(g / divide);
+				const unsigned char B = unsigned char(b / divide);
+
+				pixels.push_back({ R,G,B });
+			}
+		}
+	}
+
+	assert(pixels.size() == W * H);
+
+	for (int y = 0; y < H; y++)
+	{
+		for (int x = 0; x < W; x++)
+		{
+			i = y * W + x;
+
+			DrawPixel(x, y, pixels[i]);
+		}
+	}
+}
+
 // DRAW FUNCTIONS
 void Graphics::DrawLineSegment( const int& X0, const int& Y0, const int& X1, const int& Y1, const Color& COLOR )
 {
@@ -525,19 +601,7 @@ void Graphics::DrawCircle( const bool& FILLED, const int& X, const int& Y, const
 		}
 	}
 }
-void Graphics::DrawTriangle( const bool& FILLED, const Vector& A, const Vector& B, const Vector& C, const Color& COLOR )
-{	
-	if( FILLED )
-	{
-		DrawTriangle( A, B, C, COLOR );
-	}
-	else
-	{
-		DrawLineSegment( A, B, COLOR );
-		DrawLineSegment( B, C, COLOR );
-		DrawLineSegment( C, A, COLOR );
-	}	
-}
+
 void Graphics::DrawTile( const Tile& T, const Surface& IMAGE )
 {
 	const TextureVertex T0 = { T.GetPosition()[0], T.GetTexCoord()[0] };
@@ -640,7 +704,19 @@ void Graphics::DrawImage( const bool& ALPHA, const int& X, const int& Y, const S
 	DrawImage( ALPHA, LEFT, TOP, RIGHT, BOTTOM, S );
 }
 
-// PRIVATE TRIANGLE FUNCTIONS
+void Graphics::DrawTriangle( const bool& FILLED, const Vector& A, const Vector& B, const Vector& C, const Color& COLOR )
+{	
+	if( FILLED )
+	{
+		DrawTriangle( A, B, C, COLOR );
+	}
+	else
+	{
+		DrawLineSegment( A, B, COLOR );
+		DrawLineSegment( B, C, COLOR );
+		DrawLineSegment( C, A, COLOR );
+	}	
+}
 void Graphics::DrawTriangle( const Vector& A, const Vector& B, const Vector& C, const Color& COLOR )
 {
 	// copies that can be swapped around
@@ -692,6 +768,53 @@ void Graphics::DrawTriangle( const Vector& A, const Vector& B, const Vector& C, 
 		}
 	}
 }
+void Graphics::DrawTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
+{
+	// using pointers so we can swap (for sorting purposes)
+	const Math::TextureVertex* pv0 = &v0;
+	const Math::TextureVertex* pv1 = &v1;
+	const Math::TextureVertex* pv2 = &v2;
+
+	// sorting vertices by y
+	if (pv1->pos.y < pv0->pos.y) std::swap(pv0, pv1);
+	if (pv2->pos.y < pv1->pos.y) std::swap(pv1, pv2);
+	if (pv1->pos.y < pv0->pos.y) std::swap(pv0, pv1);
+
+	if (pv0->pos.y == pv1->pos.y) // natural flat top
+	{
+		// sorting top vertices by x
+		if (pv1->pos.x < pv0->pos.x) std::swap(pv0, pv1);
+		DrawFlatTopTriangleTex(*pv0, *pv1, *pv2, tex);
+	}
+	else if (pv1->pos.y == pv2->pos.y) // natural flat bottom
+	{
+		// sorting bottom vertices by x
+		if (pv2->pos.x < pv1->pos.x) std::swap(pv1, pv2);
+		DrawFlatBottomTriangleTex(*pv0, *pv1, *pv2, tex);
+	}
+	else // general triangle
+	{
+		// find splitting vertex
+		const float alphaSplit =
+			(pv1->pos.y - pv0->pos.y) /
+			(pv2->pos.y - pv0->pos.y);
+		const Math::TextureVertex vi = pv0->InterpolateTo(*pv2, alphaSplit);
+
+		if (pv1->pos.x < vi.pos.x) // major right
+		{
+			DrawFlatBottomTriangleTex(*pv0, *pv1, vi, tex);
+			DrawFlatTopTriangleTex(*pv1, vi, *pv2, tex);
+		}
+		else // major left
+		{
+			DrawFlatBottomTriangleTex(*pv0, vi, *pv1, tex);
+			DrawFlatTopTriangleTex(vi, *pv1, *pv2, tex);
+		}
+	}
+}
+
+
+// PRIVATE DRAW TRIANGLE FUNCTIONS
 void Graphics::DrawFlatTopTriangle( const Vector& it0, const Vector& it1, const Vector& it2, const Color& COLOR)
 {
 	// calulcate dVertex / dy
@@ -753,7 +876,76 @@ void Graphics::DrawFlatTriangle( const Vector& it0,	const Vector& it1, const Vec
 
 		for( int x = xStart; x < xEnd; x++, iLine += diLine )
 		{			
-			DrawPixel( x, y, COLOR );			
+			DrawPixelAlpha( x, y, COLOR );			
+		}
+	}
+}
+
+void Graphics::DrawFlatTopTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
+{
+	// calulcate dVertex / dy
+	const float delta_y = v2.pos.y - v0.pos.y;
+	const Math::TextureVertex dv0 = (v2 - v0) / delta_y;
+	const Math::TextureVertex dv1 = (v2 - v1) / delta_y;
+
+	// create right edge interpolant
+	Math::TextureVertex itEdge1 = v1;
+
+	// call the flat triangle render routine
+	DrawFlatTriangleTex(v0, v1, v2, tex, dv0, dv1, itEdge1);
+}
+void Graphics::DrawFlatBottomTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
+{
+	// calulcate dVertex / dy
+	const float delta_y = v2.pos.y - v0.pos.y;
+	const Math::TextureVertex dv0 = (v1 - v0) / delta_y;
+	const Math::TextureVertex dv1 = (v2 - v0) / delta_y;
+
+	// create right edge interpolant
+	Math::TextureVertex itEdge1 = v0;
+
+	// call the flat triangle render routine
+	DrawFlatTriangleTex(v0, v1, v2, tex, dv0, dv1, itEdge1);
+}
+void Graphics::DrawFlatTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex,
+	const Math::TextureVertex& dv0, const Math::TextureVertex& dv1, Math::TextureVertex& itEdge1)
+{
+	// create edge interpolant for left edge (always v0)
+	Math::TextureVertex itEdge0 = v0;
+
+	// calculate start and end scanlines
+	const int yStart = (int)ceil(v0.pos.y - 0.5f);
+	const int yEnd = (int)ceil(v2.pos.y - 0.5f); // the scanline AFTER the last line drawn
+
+	// do interpolant prestep
+	itEdge0 += dv0 * (float(yStart) + 0.5f - v0.pos.y);
+	itEdge1 += dv1 * (float(yStart) + 0.5f - v0.pos.y);
+
+	// init tex width/height and clamp values
+	const float tex_width = float(tex.GetWidth());
+	const float tex_height = float(tex.GetHeight());
+	const float tex_clamp_x = tex_width - 1.0f;
+	const float tex_clamp_y = tex_height - 1.0f;
+
+	for (int y = yStart; y < yEnd; y++, itEdge0 += dv0, itEdge1 += dv1)
+	{
+		// calculate start and end pixels
+		const int xStart = (int)ceil(itEdge0.pos.x - 0.5f);
+		const int xEnd = (int)ceil(itEdge1.pos.x - 0.5f); // the pixel AFTER the last pixel drawn
+
+		// calculate scanline dTexCoord / dx
+		const Vector dtcLine = (itEdge1.tc - itEdge0.tc) / (itEdge1.pos.x - itEdge0.pos.x);
+
+		// create scanline tex coord interpolant and prestep
+		Vector itcLine = itEdge0.tc + dtcLine * (float(xStart) + 0.5f - itEdge0.pos.x);
+
+		for (int x = xStart; x < xEnd; x++, itcLine += dtcLine)
+		{
+			DrawPixelAlpha(x, y, tex.GetPixel(
+				int(std::min(itcLine.x * tex_width, tex_clamp_x)),
+				int(std::min(itcLine.y * tex_height, tex_clamp_y))));
+			// need std::min b/c tc.x/y == 1.0, we'll read off edge of tex
+			// and with fp err, tc.x/y can be > 1.0 (by a tiny amount)
 		}
 	}
 }
@@ -802,51 +994,6 @@ void Graphics::DrawFlatTriangle( const Vector& it0,	const Vector& it1, const Vec
 //		}
 //	}
 //}
-
-void Graphics::DrawTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
-{
-	// using pointers so we can swap (for sorting purposes)
-	const Math::TextureVertex* pv0 = &v0;
-	const Math::TextureVertex* pv1 = &v1;
-	const Math::TextureVertex* pv2 = &v2;
-
-	// sorting vertices by y
-	if (pv1->pos.y < pv0->pos.y) std::swap(pv0, pv1);
-	if (pv2->pos.y < pv1->pos.y) std::swap(pv1, pv2);
-	if (pv1->pos.y < pv0->pos.y) std::swap(pv0, pv1);
-
-	if (pv0->pos.y == pv1->pos.y) // natural flat top
-	{
-		// sorting top vertices by x
-		if (pv1->pos.x < pv0->pos.x) std::swap(pv0, pv1);
-		DrawFlatTopTriangleTex(*pv0, *pv1, *pv2, tex);
-	}
-	else if (pv1->pos.y == pv2->pos.y) // natural flat bottom
-	{
-		// sorting bottom vertices by x
-		if (pv2->pos.x < pv1->pos.x) std::swap(pv1, pv2);
-		DrawFlatBottomTriangleTex(*pv0, *pv1, *pv2, tex);
-	}
-	else // general triangle
-	{
-		// find splitting vertex
-		const float alphaSplit =
-			(pv1->pos.y - pv0->pos.y) /
-			(pv2->pos.y - pv0->pos.y);
-		const Math::TextureVertex vi = pv0->InterpolateTo(*pv2, alphaSplit);
-
-		if (pv1->pos.x < vi.pos.x) // major right
-		{
-			DrawFlatBottomTriangleTex(*pv0, *pv1, vi, tex);
-			DrawFlatTopTriangleTex(*pv1, vi, *pv2, tex);
-		}
-		else // major left
-		{
-			DrawFlatBottomTriangleTex(*pv0, vi, *pv1, tex);
-			DrawFlatTopTriangleTex(vi, *pv1, *pv2, tex);
-		}
-	}
-}
 
 //void Graphics::DrawFlatTopTriangle(const Vector& v0, const Vector& v1, const Vector& v2, Color c)
 //{
@@ -903,74 +1050,3 @@ void Graphics::DrawTriangleTex(const Math::TextureVertex& v0, const Math::Textur
 //		}
 //	}
 //}
-
-void Graphics::DrawFlatTopTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
-{
-	// calulcate dVertex / dy
-	const float delta_y = v2.pos.y - v0.pos.y;
-	const Math::TextureVertex dv0 = (v2 - v0) / delta_y;
-	const Math::TextureVertex dv1 = (v2 - v1) / delta_y;
-
-	// create right edge interpolant
-	Math::TextureVertex itEdge1 = v1;
-
-	// call the flat triangle render routine
-	DrawFlatTriangleTex(v0, v1, v2, tex, dv0, dv1, itEdge1);
-}
-
-void Graphics::DrawFlatBottomTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex)
-{
-	// calulcate dVertex / dy
-	const float delta_y = v2.pos.y - v0.pos.y;
-	const Math::TextureVertex dv0 = (v1 - v0) / delta_y;
-	const Math::TextureVertex dv1 = (v2 - v0) / delta_y;
-
-	// create right edge interpolant
-	Math::TextureVertex itEdge1 = v0;
-
-	// call the flat triangle render routine
-	DrawFlatTriangleTex(v0, v1, v2, tex, dv0, dv1, itEdge1);
-}
-
-void Graphics::DrawFlatTriangleTex(const Math::TextureVertex& v0, const Math::TextureVertex& v1, const Math::TextureVertex& v2, const Surface& tex,
-	const Math::TextureVertex& dv0, const Math::TextureVertex& dv1, Math::TextureVertex& itEdge1)
-{
-	// create edge interpolant for left edge (always v0)
-	Math::TextureVertex itEdge0 = v0;
-
-	// calculate start and end scanlines
-	const int yStart = (int)ceil(v0.pos.y - 0.5f);
-	const int yEnd = (int)ceil(v2.pos.y - 0.5f); // the scanline AFTER the last line drawn
-
-	// do interpolant prestep
-	itEdge0 += dv0 * (float(yStart) + 0.5f - v0.pos.y);
-	itEdge1 += dv1 * (float(yStart) + 0.5f - v0.pos.y);
-
-	// init tex width/height and clamp values
-	const float tex_width = float(tex.GetWidth());
-	const float tex_height = float(tex.GetHeight());
-	const float tex_clamp_x = tex_width - 1.0f;
-	const float tex_clamp_y = tex_height - 1.0f;
-
-	for (int y = yStart; y < yEnd; y++, itEdge0 += dv0, itEdge1 += dv1)
-	{
-		// calculate start and end pixels
-		const int xStart = (int)ceil(itEdge0.pos.x - 0.5f);
-		const int xEnd = (int)ceil(itEdge1.pos.x - 0.5f); // the pixel AFTER the last pixel drawn
-
-		// calculate scanline dTexCoord / dx
-		const Vector dtcLine = (itEdge1.tc - itEdge0.tc) / (itEdge1.pos.x - itEdge0.pos.x);
-
-		// create scanline tex coord interpolant and prestep
-		Vector itcLine = itEdge0.tc + dtcLine * (float(xStart) + 0.5f - itEdge0.pos.x);
-
-		for (int x = xStart; x < xEnd; x++, itcLine += dtcLine)
-		{
-			DrawPixel(x, y, tex.GetPixel(
-				int(std::min(itcLine.x * tex_width, tex_clamp_x)),
-				int(std::min(itcLine.y * tex_height, tex_clamp_y))));
-			// need std::min b/c tc.x/y == 1.0, we'll read off edge of tex
-			// and with fp err, tc.x/y can be > 1.0 (by a tiny amount)
-		}
-	}
-}

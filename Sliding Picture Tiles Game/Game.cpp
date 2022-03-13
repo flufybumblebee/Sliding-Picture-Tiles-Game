@@ -44,19 +44,26 @@ Game::Game(MainWindow& wnd)
 	wnd(wnd),
 	gfx(wnd)	
 {
-	backgroundImages.push_back(Surface::FromFile(L"Images\\woven.jpg"));
-	backgroundImages.push_back(Surface::FromFile(L"Images\\swirl.jpg"));
-	backgroundImages.push_back(Surface::FromFile(L"Images\\wooden_boards.jpg"));
-	backgroundImages.push_back(Surface::FromFile(L"Images\\shell.jpg"));
+	controlState = ControlState::Mouse; // default to mouse on start
+	gameState = GameState::Setup; // default to settings on start
 
-	SetImages();
-	SetTextureCoordinates();
-	SetPositions();
-	RandomiseImage();
+	SetBackgroundImages();
+	SetButtonImages();
+	SetTileImages();
+	RandomiseTileImage();
 
+	SetButtonPositions();
+	SetTileTextureCoordinates();
+	SetTilePositions();
 	SetTiles();
 
 	timer.StartWatch();
+
+	const int L = (int)tilePositions.front()[0].x;
+	const int T = (int)tilePositions.front()[0].y;
+	const int R = (int)tilePositions.back()[3].x;
+	const int B = (int)tilePositions.back()[3].y;
+	tileRect = { L,T,R,B };
 }
 
 void Game::Go()
@@ -70,71 +77,211 @@ void Game::Go()
 void Game::Update()
 {
 	#ifdef NDEBUG
+	const int MOVES_MAX = rows * cols * 3;
 	GetFrameTime();
 	#else
+	const int MOVES_MAX = rows * cols * 1;
 	frameTime = FRAME_TIME;
 	#endif
+
 	
-	if (!isSetUp)
-	{	
-		if (!isMoving)
+
+	switch(gameState)
+	{
+		case GameState::Settings:
 		{
-			std::vector<int> numbers = { 0,1,2,3 };
-			assert(numbers.size() == 4);
-
-			if(lastDir == 1)		numbers.erase(numbers.begin() + 0);
-			if(lastDir == -1)		numbers.erase(numbers.begin() + 1);
-			if(lastDir == COLS)		numbers.erase(numbers.begin() + 2);
-			if(lastDir == -COLS)	numbers.erase(numbers.begin() + 3);
-
-			int randomNum = Random(0, (int)numbers.size() - 1);
-
-			const int GAP = tiles.back().GetPos();
-
-			while (!IsNextToGap(GAP + NUMBERS[numbers[randomNum]]))
+			switch (controlState)
 			{
-				numbers.erase(numbers.begin() + randomNum);
-				randomNum = Random(0, (int)numbers.size() - 1);
-			}
+			case ControlState::Mouse:
 
-			lastDir = NUMBERS[numbers[randomNum]];
-			const int NEXT_TO_GAP = GAP + NUMBERS[numbers[randomNum]];
-			const int INDEX = GetTileIndex(NEXT_TO_GAP);
+				const float MOUSE_X = (float)wnd.mouse.GetPosX();
+				const float MOUSE_Y = (float)wnd.mouse.GetPosY();
+				const float BUTTON_L = buttonPositions[2][0].x;
+				const float BUTTON_R = buttonPositions[2][3].x;
+				const float BUTTON_T = buttonPositions[2][0].y;
+				const float BUTTON_B = buttonPositions[2][3].y;
+				bool mouseOver = false;
 
-			tiles.back().SetPosition(NEXT_TO_GAP);
-			tiles[INDEX].SetToMoving(GAP);
-			isMoving = true;
-			
-			if (increment < INCR_MAX) increment++;
-		}
-		else
-		{
-			int j = 0;
-			for (size_t i = 0; i < tiles.size(); i++)
-			{
-				if (tiles[i].IsMoving())
+				if (MOUSE_X >= BUTTON_L &&
+					MOUSE_X <= BUTTON_R &&
+					MOUSE_Y >= BUTTON_T &&
+					MOUSE_Y <= BUTTON_B)
 				{
-					tiles[i].Move(frameTime);
-					isMoving = true;
-					j++;
+					// mouse over settings button
+					mouseOver = true;
+				}
+				else mouseOver = false;
+
+				if (mouseOver)
+				{
+					if (!mousePressed)
+					{
+						if (wnd.mouse.LeftIsPressed())
+						{
+							mousePressed = true;
+							controlState = ControlState::Keyboard;
+							gameState = GameState::Play;
+						}
+					}
+					else
+					{
+						if (!wnd.mouse.LeftIsPressed())
+						{
+							mousePressed = false;
+							// WARNING: this may cause issues
+							// as there is a seperate function that also does
+							// this check. it might be ok though
+						}
+					}
+				}
+				break;
+			}
+			break;
+		}
+		case GameState::Setup:
+		{
+			if (!isMoving)
+			{
+				const std::array<int, 4> DIRECTION = { -1,1,-cols,cols };
+
+				std::vector<int> numbers = { 0,1,2,3 };
+				assert(numbers.size() == 4);
+
+				if (prevDir == 1)		numbers.erase(numbers.begin() + 0);
+				if (prevDir == -1)		numbers.erase(numbers.begin() + 1);
+				if (prevDir == cols)	numbers.erase(numbers.begin() + 2);
+				if (prevDir == -cols)	numbers.erase(numbers.begin() + 3);
+
+				int randomNum = Random(0, (int)numbers.size() - 1);
+
+				const int GAP = tiles.back().GetPos();
+
+				while (!IsNextToGap(GAP + DIRECTION[numbers[randomNum]]))
+				{
+					numbers.erase(numbers.begin() + randomNum);
+					randomNum = Random(0, (int)numbers.size() - 1);
+				}
+
+				prevDir = DIRECTION[numbers[randomNum]];
+				const int NEXT_TO_GAP = GAP + DIRECTION[numbers[randomNum]];
+				const int INDEX = GetTileIndex(NEXT_TO_GAP);
+
+				tiles.back().SetPosition(NEXT_TO_GAP);
+				tiles[INDEX].SetToMoving(GAP);
+				isMoving = true;
+
+				if (nMoves < MOVES_MAX) nMoves++;
+			}
+			else
+			{
+				int j = 0;
+				for (size_t i = 0; i < tiles.size(); i++)
+				{
+					if (tiles[i].IsMoving())
+					{
+						tiles[i].Move(frameTime);
+						isMoving = true;
+						j++;
+					}
+				}
+
+				if (j == 0)
+				{
+					cursor = tiles.back().GetPos();
+					isMoving = false;
+					if (nMoves >= MOVES_MAX) isSetUp = true;
+
+					if (nMoves >= MOVES_MAX) gameState = GameState::Play;
 				}
 			}
 
-			if (j == 0)
+			break;
+		}
+		case GameState::Play:
+		{
+			switch (controlState)
 			{
-				cursor = tiles.back().GetPos();
-				isMoving = false;
-				if(increment >= INCR_MAX) isSetUp = true;
-			}
-		}			
-	}
-	else
-	{
-		if(!gameOver) MoveCursor();
-		MoveTile();
+			case ControlState::Mouse:
+			{
+				const float MOUSE_X = (float)wnd.mouse.GetPosX();
+				const float MOUSE_Y = (float)wnd.mouse.GetPosY();
+				if (MOUSE_X >= tileRect.left &&
+					MOUSE_X <= tileRect.right &&
+					MOUSE_Y >= tileRect.top &&
+					MOUSE_Y <= tileRect.bottom)
+				{
 
-		if(!isMoving) CheckForGameOver();
-		CheckForGameReset();
+				}
+				else
+				{
+
+				}
+				const float BUTTON_L = buttonPositions[0][0].x;
+				const float BUTTON_R = buttonPositions[0][3].x;
+				const float BUTTON_T = buttonPositions[0][0].y;
+				const float BUTTON_B = buttonPositions[0][3].y;
+				bool mouseOver = false;
+
+				if (MOUSE_X >= BUTTON_L &&
+					MOUSE_X <= BUTTON_R &&
+					MOUSE_Y >= BUTTON_T &&
+					MOUSE_Y <= BUTTON_B)
+				{
+					// mouse over settings button
+					mouseOver = true;
+				}
+				else mouseOver = false;
+
+				if (mouseOver)
+				{
+					if (!mousePressed)
+					{
+						if (wnd.mouse.LeftIsPressed())
+						{
+							mousePressed = true;
+							gameState = GameState::Settings;
+						}
+					}
+					else
+					{
+						if (!wnd.mouse.LeftIsPressed())
+						{
+							mousePressed = false;
+							// WARNING: this may cause issues
+							// as there is a seperate function that also does
+							// this check. it might be ok though
+						}
+					}
+				}
+				break;
+			}
+			case ControlState::Keyboard:
+			{
+				bool toggle = false;
+				if (!toggle)
+				{
+					if (wnd.kbd.KeyIsPressed(VK_TAB))
+					{
+
+					}
+				}
+				break;
+			}
+			case ControlState::Controller:
+			{
+				// placeholder
+				break;
+			}
+			}
+
+			if (!gameOver) MoveCursor();
+			MoveTile();
+
+			if (!isMoving) CheckForGameOver();
+			CheckForGameReset();
+
+			break;
+		}
 	}
 
 	CheckForGameExit();
@@ -144,19 +291,113 @@ void Game::Draw()
 {
 	DrawBackground();
 
-	DrawTiles();
-		
-	if (!gameOver)
+	switch (gameState)
 	{
-		if(isSetUp) DrawCursor();
-		DrawTileBorders();
+		case GameState::Settings:
+			
+			gfx.DrawRectangle(true, 25, 25, 675, 475, { 100,255,255,255 });
+			DrawButtonMouse();
+			DrawButtonKeyboard();
+			DrawButtonController();
+			break;
+
+		case GameState::Setup:
+			DrawTiles();
+			DrawTileBorders();
+			//DrawButtonSettings();
+			break;
+		
+		case GameState::Play:
+			DrawTiles();
+			if(!gameOver) DrawCursor();
+			if(!gameOver) DrawTileBorders();
+			DrawButtonSettings();
+			break;
 	}
 }
 
 //---------------------------------------------------
 
 
-void Game::SetImages()
+void Game::SetButtonImages()
+{
+	buttonImages.push_back(Surface::FromFile(L"Images\\Settings.png"));
+	buttonImages.push_back(Surface::FromFile(L"Images\\Mouse.png"));
+	buttonImages.push_back(Surface::FromFile(L"Images\\Keyboard.png"));
+	buttonImages.push_back(Surface::FromFile(L"Images\\Controller.png"));
+}
+void Game::SetButtonPositions()
+{
+	// Settings Button
+	{
+		const float L = 550.0f;
+		const float R = L + 100.0f;
+		const float T = 25.0f;
+		const float B = T + 100.0f;
+
+		const Vector LT = { L,T };
+		const Vector RT = { R,T };
+		const Vector LB = { L,B };
+		const Vector RB = { R,B };
+
+		buttonPositions.push_back({ LT, RT ,LB ,RB });
+	}
+
+	// Mouse Button
+	{
+		const float L = 350.0f;
+		const float R = L + 100.0f;
+		const float T = 100.0f;
+		const float B = T + 100.0f;
+
+		const Vector LT = { L,T };
+		const Vector RT = { R,T };
+		const Vector LB = { L,B };
+		const Vector RB = { R,B };
+
+		buttonPositions.push_back({ LT, RT ,LB ,RB });
+	}
+
+	// Keyboard Button
+	{
+		const float L = 50.0f;
+		const float R = L + 200.0f;
+		const float T = 100.0f;
+		const float B = T + 100.0f;
+
+		const Vector LT = { L,T };
+		const Vector RT = { R,T };
+		const Vector LB = { L,B };
+		const Vector RB = { R,B };
+
+		buttonPositions.push_back({ LT, RT ,LB ,RB });
+	}
+
+	// Controller Button
+	{
+		const float L = 500.0f;
+		const float R = L + 150.0f;
+		const float T = 100.0f;
+		const float B = T + 100.0f;
+
+		const Vector LT = { L,T };
+		const Vector RT = { R,T };
+		const Vector LB = { L,B };
+		const Vector RB = { R,B };
+
+		buttonPositions.push_back({ LT, RT ,LB ,RB });
+	}
+}
+void Game::SetBackgroundImages()
+{
+	backgroundImages.push_back(Surface::FromFile(L"Images\\woven.jpg"));
+	backgroundImages.push_back(Surface::FromFile(L"Images\\swirl.jpg"));
+	backgroundImages.push_back(Surface::FromFile(L"Images\\wooden_boards.jpg"));
+	backgroundImages.push_back(Surface::FromFile(L"Images\\shell.jpg"));
+	backgroundImages.push_back(Surface::FromFile(L"Images\\pebble.jpg"));
+	backgroundImages.push_back(Surface::FromFile(L"Images\\floral_red.jpg"));
+}
+void Game::SetTileImages()
 {
 	tileImages.push_back(Surface::FromFile(L"Images\\mountain.jpg"));
 	tileImages.push_back(Surface::FromFile(L"Images\\earth.jpg"));
@@ -164,48 +405,53 @@ void Game::SetImages()
 	tileImages.push_back(Surface::FromFile(L"Images\\pretty.jpg"));
 }
 
-void Game::SetTextureCoordinates()
+void Game::SetTileTextureCoordinates()
 {
-	texCoords.clear();
+	tileTexCoords.clear();
+
+	const float XFRACTION = 1.0f / cols;
+	const float YFRACTION = 1.0f / rows;
+	const int SIZE = rows * cols;
 
 	Vector topLeft;
 	Vector topRight;
 	Vector bottomLeft;
 	Vector bottomRight;
 
+	float left		= 0;
+	float top		= 0;
+	float right		= 0;
+	float bottom	= 0;
+
 	for (int i = 0; i < SIZE; i++)
 	{
-		const float LEFT = XFRACTION * float(i % COLS);
-		const float TOP = YFRACTION * float(i / COLS);
-		const float RIGHT = LEFT + XFRACTION;
-		const float BOTTOM = TOP + YFRACTION;
+		left	= XFRACTION * float(i % cols);
+		top		= YFRACTION * float(i / cols);
+		right	= left + XFRACTION;
+		bottom	= top + YFRACTION;
 
-		topLeft = { 
-			std::max(LEFT, 0.0f),
-			std::max(TOP, 0.0f) };
+		topLeft = { left, top };
+		topRight = { right, top };
+		bottomLeft = { left, bottom };
+		bottomRight = { right, bottom };
 
-		topRight = { 
-			std::min(RIGHT, 1.0f),
-			std::max(TOP, 0.0f) };
-
-		bottomLeft = { 
-			std::max(LEFT, 0.0f),
-			std::min(BOTTOM, 1.0f) };
-
-		bottomRight = { 
-			std::min(RIGHT, 1.0f),
-			std::min(BOTTOM, 1.0f)};
-
-		texCoords.push_back({
+		tileTexCoords.push_back({
 			topLeft,
 			topRight,
 			bottomLeft,
 			bottomRight });
 	}
+
+	assert(tileTexCoords.size() == SIZE);
 }
-void Game::SetPositions()
+void Game::SetTilePositions()
 {
-	positions.clear();
+	tilePositions.clear();
+
+	const int OFFSET = 25;
+	const int TILE_WIDTH = (Graphics::WINDOW_WIDTH - (OFFSET * 2) - 200) / cols;
+	const int TILE_HEIGHT = (Graphics::WINDOW_HEIGHT - (OFFSET * 2)) / rows;
+	const int SIZE = rows * cols;
 
 	Vector topLeft;
 	Vector topRight;
@@ -219,46 +465,53 @@ void Game::SetPositions()
 
 	for (int i = 0; i < SIZE; i++)
 	{
-		left = float(WIDTH * (i % COLS)) + OFFSET;
-		top = float(HEIGHT * (i / COLS)) + OFFSET;
-		right = left + WIDTH;
-		bottom = top + HEIGHT;
+		left = float(TILE_WIDTH * (i % cols)) + OFFSET;
+		top = float(TILE_HEIGHT * (i / cols)) + OFFSET;
+		right = left + TILE_WIDTH;
+		bottom = top + TILE_HEIGHT;
 
 		topLeft = {	left, top };
 		topRight = { right, top }; 
 		bottomLeft = { left, bottom };
 		bottomRight = {	right, bottom };
 
-		positions.push_back({
+		tilePositions.push_back({
 			topLeft,
 			topRight,
 			bottomLeft,
 			bottomRight });
 	}
+
+	assert(tilePositions.size() == SIZE);
 }
 
 void Game::SetTiles()
 {
 	tiles.clear();
 	assert(tiles.empty() == true);
+
+	const int SIZE = rows * cols;
+	const float	TILE_SPEED = 150.0f;
+
 	for (int i = 0; i < SIZE; i++)
 	{
 		tiles.push_back({
 			TILE_SPEED,
 			i,
-			positions,
+			tilePositions,
 			i,
-			texCoords});
+			tileTexCoords});
 	}
+
 	assert(tiles.size() == SIZE);
 }
 
-void Game::NextImage()
+void Game::NextTileImage()
 {
 	imageNum++;
 	if (imageNum >= tileImages.size()) imageNum = 0;
 }
-void Game::RandomiseImage()
+void Game::RandomiseTileImage()
 {
 	if (!tileImages.empty())
 	{
@@ -268,7 +521,7 @@ void Game::RandomiseImage()
 
 int  Game::GetTileIndex(const int& POS)
 {
-	for (int i = 0; i < SIZE; i++)
+	for (int i = 0; i < tiles.size(); i++)
 	{
 		if (tiles[i].GetPos() == POS)
 		{
@@ -286,13 +539,13 @@ bool Game::IsNextToGap(const int& POS)
 
 	if (GAP == POS) return false;
 
-	const int GAP_COL = GAP % COLS;
-	const int POS_COL = POS % COLS;
+	const int GAP_COL = GAP % cols;
+	const int POS_COL = POS % cols;
 	
-	if (GAP_COL == POS_COL && (POS == GAP + COLS || POS == GAP - COLS)) return true;
+	if (GAP_COL == POS_COL && (POS == GAP + cols || POS == GAP - cols)) return true;
 	
-	const int GAP_ROW = GAP / COLS;
-	const int POS_ROW = POS / COLS;
+	const int GAP_ROW = GAP / cols;
+	const int POS_ROW = POS / cols;
 	
 	if (GAP_ROW == POS_ROW && (POS == GAP + 1 || POS == GAP - 1)) return true;
 		
@@ -308,66 +561,9 @@ void Game::GetFrameTime()
 
 void Game::MoveCursor()
 {
-	if (isKeyboard)
+	switch (controlState)
 	{
-		if (!arrowPressed)
-		{
-			/**/ if (wnd.kbd.KeyIsPressed(VK_LEFT))
-			{
-				arrowPressed = true;
-				int count = 0;
-				for (int i = 0; i < COLS; i++)
-				{
-					if (cursor != i * COLS)
-					{
-						count++;
-					}
-				}
-				if (count == COLS) cursor--;
-			}
-			else if (wnd.kbd.KeyIsPressed(VK_RIGHT))
-			{
-				arrowPressed = true;
-				int count = 0;
-				for (int i = 1; i <= COLS; i++)
-				{
-					int j = i * COLS - 1;
-					if (cursor != j)
-					{
-						count++;
-					}
-				}
-				if (count == COLS) cursor++;
-			}
-			else if (wnd.kbd.KeyIsPressed(VK_UP))
-			{
-				arrowPressed = true;
-				if (cursor > COLS - 1)
-				{
-					cursor -= COLS;
-				}
-			}
-			else if (wnd.kbd.KeyIsPressed(VK_DOWN))
-			{
-				arrowPressed = true;
-				if (cursor < (ROWS - 1) * COLS)
-				{
-					cursor += COLS;
-				}
-			}
-		}
-		else
-		{
-			if (!wnd.kbd.KeyIsPressed(VK_LEFT) &&
-				!wnd.kbd.KeyIsPressed(VK_RIGHT) &&
-				!wnd.kbd.KeyIsPressed(VK_UP) &&
-				!wnd.kbd.KeyIsPressed(VK_DOWN))
-			{
-				arrowPressed = false;
-			}
-		}
-	}
-	else
+	case ControlState::Mouse:
 	{
 		if (wnd.mouse.IsInWindow())
 		{
@@ -386,48 +582,94 @@ void Game::MoveCursor()
 				right = (int)T.GetPosition()[3].x;
 				bottom = (int)T.GetPosition()[3].y;
 
-				if (MOUSE_X >= left && MOUSE_X <= right && MOUSE_Y >= top && MOUSE_Y <= bottom)
+				if (MOUSE_X >= left &&
+					MOUSE_X <= right &&
+					MOUSE_Y >= top &&
+					MOUSE_Y <= bottom)
 				{
 					cursor = T.GetPos();
 				}
 			}
 		}
+
+		break;
+	}
+	case ControlState::Keyboard:
+	{
+		if (!arrowPressed)
+		{
+			/**/ if (wnd.kbd.KeyIsPressed(VK_LEFT))
+			{
+				arrowPressed = true;
+				int count = 0;
+				for (int i = 0; i < cols; i++)
+				{
+					if (cursor != i * cols)
+					{
+						count++;
+					}
+				}
+				if (count == cols) cursor--;
+			}
+			else if (wnd.kbd.KeyIsPressed(VK_RIGHT))
+			{
+				arrowPressed = true;
+				int count = 0;
+				for (int i = 1; i <= cols; i++)
+				{
+					int j = i * cols - 1;
+					if (cursor != j)
+					{
+						count++;
+					}
+				}
+				if (count == cols) cursor++;
+			}
+			else if (wnd.kbd.KeyIsPressed(VK_UP))
+			{
+				arrowPressed = true;
+				if (cursor > cols - 1)
+				{
+					cursor -= cols;
+				}
+			}
+			else if (wnd.kbd.KeyIsPressed(VK_DOWN))
+			{
+				arrowPressed = true;
+				if (cursor < (rows - 1) * cols)
+				{
+					cursor += cols;
+				}
+			}
+		}
+		else
+		{
+			if (!wnd.kbd.KeyIsPressed(VK_LEFT) &&
+				!wnd.kbd.KeyIsPressed(VK_RIGHT) &&
+				!wnd.kbd.KeyIsPressed(VK_UP) &&
+				!wnd.kbd.KeyIsPressed(VK_DOWN))
+			{
+				arrowPressed = false;
+			}
+		}
+
+		break;
+	}
+	case ControlState::Controller:
+	{
+		// placeholder
+		break;
+	}
 	}	
 }
 void Game::MoveTile()
 {
 	if (!isMoving)
 	{
-		if (isKeyboard)
+		switch (controlState)
 		{
-			if (!spacePressed)
-			{
-				if (wnd.kbd.KeyIsPressed(VK_SPACE))
-				{
-					spacePressed = true;
+		case ControlState::Mouse:
 
-					const int CUR_INDEX = GetTileIndex(cursor);
-
-					const int GAP = tiles.back().GetPos();
-
-					if (IsNextToGap(cursor))
-					{
-						tiles.back().SetPosition(cursor);
-						tiles[CUR_INDEX].SetToMoving(GAP);
-						isMoving = true;
-					}
-				}
-			}
-			else
-			{
-				if (!wnd.kbd.KeyIsPressed(VK_SPACE))
-				{
-					spacePressed = false;
-				}
-			}
-		}
-		else
-		{
 			if (!mousePressed)
 			{
 				if (wnd.mouse.LeftIsPressed())
@@ -454,7 +696,103 @@ void Game::MoveTile()
 					mousePressed = false;
 				}
 			}
+
+			break;
+
+		case ControlState::Keyboard:
+
+			if (!spacePressed)
+			{
+				if (wnd.kbd.KeyIsPressed(VK_SPACE))
+				{
+					spacePressed = true;
+
+					const int CUR_INDEX = GetTileIndex(cursor);
+
+					const int GAP = tiles.back().GetPos();
+
+					if (IsNextToGap(cursor))
+					{
+						tiles.back().SetPosition(cursor);
+						tiles[CUR_INDEX].SetToMoving(GAP);
+						PlaySound(L"Sounds\\click3.wav", NULL, SND_ASYNC);
+						isMoving = true;
+					}
+				}
+			}
+			else
+			{
+				if (!wnd.kbd.KeyIsPressed(VK_SPACE))
+				{
+					spacePressed = false;
+				}
+			}
+
+			break;
+
+		case ControlState::Controller:
+
+			break;
 		}
+
+		//if (isKeyboard)
+		//{
+		//	/*if (!spacePressed)
+		//	{
+		//		if (wnd.kbd.KeyIsPressed(VK_SPACE))
+		//		{
+		//			spacePressed = true;
+		//
+		//			const int CUR_INDEX = GetTileIndex(cursor);
+		//
+		//			const int GAP = tiles.back().GetPos();
+		//
+		//			if (IsNextToGap(cursor))
+		//			{
+		//				tiles.back().SetPosition(cursor);
+		//				tiles[CUR_INDEX].SetToMoving(GAP);
+		//				PlaySound(L"Sounds\\click3.wav", NULL, SND_ASYNC);
+		//				isMoving = true;
+		//			}
+		//		}
+		//	}
+		//	else
+		//	{
+		//		if (!wnd.kbd.KeyIsPressed(VK_SPACE))
+		//		{
+		//			spacePressed = false;
+		//		}
+		//	}*/
+		//}
+		//else
+		//{
+		//	/*if (!mousePressed)
+		//	{
+		//		if (wnd.mouse.LeftIsPressed())
+		//		{
+		//			mousePressed = true;
+		//
+		//			const int CUR_INDEX = GetTileIndex(cursor);
+		//
+		//			const int GAP = tiles.back().GetPos();
+		//
+		//			if (IsNextToGap(cursor))
+		//			{
+		//				tiles.back().SetPosition(cursor);
+		//				tiles[CUR_INDEX].SetToMoving(GAP);
+		//				PlaySound(L"Sounds\\click3.wav", NULL, SND_ASYNC);
+		//				isMoving = true;
+		//			}
+		//		}
+		//	}
+		//	else
+		//	{
+		//		if (!wnd.mouse.LeftIsPressed())
+		//		{
+		//			mousePressed = false;
+		//		}
+		//	}*/
+		//}
 	}
 	
 	int j = 0;
@@ -479,7 +817,7 @@ void Game::CheckForGameOver()
 	if (!gameOver)
 	{
 		int count = 0;
-		for (int i = 0; i < SIZE; i++)
+		for (int i = 0; i < tiles.size(); i++)
 		{
 			if (tiles[i].GetPos() == i)
 			{
@@ -492,7 +830,7 @@ void Game::CheckForGameOver()
 			}
 		}
 
-		if (count == SIZE) gameOver = true;
+		if (count == tiles.size()) gameOver = true;
 
 		if (gameOver) soundPlayed = PlaySound(L"Sounds\\confirmation.wav", NULL, SND_ASYNC);
 	}
@@ -506,9 +844,13 @@ void Game::CheckForGameReset()
 			returnPressed = true;
 			gameOver = false;
 			isSetUp = false;
-			increment = 0;
-			NextImage();
+			nMoves = 0;
+			NextTileImage();
+			SetTileTextureCoordinates();
+			SetTilePositions();
 			SetTiles();
+
+			gameState = GameState::Setup;
 		}
 	}
 	else
@@ -527,6 +869,111 @@ void Game::CheckForGameExit()
 	}
 }
 
+void Game::DrawBackground()
+{
+	Math::TextureVertex lt; // left  top
+	Math::TextureVertex rt; // right top
+	Math::TextureVertex lb; // left  bottom
+	Math::TextureVertex rb; // right bottom
+
+	// Whole Window: ROWS = 1, COLS = 1
+	const unsigned int ROWS = 2;
+	const unsigned int COLS = 3;
+	const float H = (float)Graphics::WINDOW_HEIGHT / ROWS; // tile width
+	const float W = (float)Graphics::WINDOW_WIDTH / COLS;  // tile height
+
+	// texture coordinates
+	const Vector LT = { 0.0f,0.0f };
+	const Vector RT = { 1.0f,0.0f };
+	const Vector LB = { 0.0f,1.0f };
+	const Vector RB = { 1.0f,1.0f };
+
+	// tile coordinates
+	float l = 0;
+	float t = 0;
+	float r = 0;
+	float b = 0;
+
+	for (unsigned int row = 0; row < ROWS; row++)
+	{
+		for (unsigned int col = 0; col < COLS; col++)
+		{
+			l = col	* W;
+			t = row	* H;
+			r = l	+ W;
+			b = t	+ H;
+
+			lt = { {l,t}, LT };
+			rt = { {r,t}, RT };
+			lb = { {l,b}, LB };
+			rb = { {r,b}, RB };
+
+			const int NUM = 2; // this needs to be a variable
+			gfx.DrawTriangleTex(lt, rt, lb, backgroundImages[NUM]);
+			gfx.DrawTriangleTex(rt, rb, lb, backgroundImages[NUM]);
+		}
+	}
+}
+void Game::DrawCounter()
+{
+	// placeholder
+}
+void Game::DrawTimer()
+{
+	// placeholder
+}
+void Game::DrawButtonSettings()
+{
+	TextureVertex tv0{ buttonPositions[0][0], { 0.0f,0.0f } };
+	TextureVertex tv1{ buttonPositions[0][1], { 1.0f,0.0f } };
+	TextureVertex tv2{ buttonPositions[0][2], { 0.0f,1.0f } };
+	TextureVertex tv3{ buttonPositions[0][3], { 1.0f,1.0f } };
+
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[0]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[0]);
+
+	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+}
+void Game::DrawButtonMouse()
+{
+	TextureVertex tv0{ buttonPositions[1][0], { 0.0f,0.0f } };
+	TextureVertex tv1{ buttonPositions[1][1], { 1.0f,0.0f } };
+	TextureVertex tv2{ buttonPositions[1][2], { 0.0f,1.0f } };
+	TextureVertex tv3{ buttonPositions[1][3], { 1.0f,1.0f } };
+
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[1]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[1]);
+
+	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+}
+void Game::DrawButtonKeyboard()
+{
+	TextureVertex tv0{ buttonPositions[2][0], { 0.0f,0.0f } };
+	TextureVertex tv1{ buttonPositions[2][1], { 1.0f,0.0f } };
+	TextureVertex tv2{ buttonPositions[2][2], { 0.0f,1.0f } };
+	TextureVertex tv3{ buttonPositions[2][3], { 1.0f,1.0f } };
+
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[2]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[2]);
+
+	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+}
+void Game::DrawButtonController()
+{
+	TextureVertex tv0{ buttonPositions[3][0], { 0.0f,0.0f } };
+	TextureVertex tv1{ buttonPositions[3][1], { 1.0f,0.0f } };
+	TextureVertex tv2{ buttonPositions[3][2], { 0.0f,1.0f } };
+	TextureVertex tv3{ buttonPositions[3][3], { 1.0f,1.0f } };
+
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[3]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[3]);
+
+	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+}
+void Game::DrawSettings()
+{
+	// placeholder
+}
 void Game::DrawTiles()
 {
 	for( const Tile& T : tiles )
@@ -539,12 +986,14 @@ void Game::DrawTiles()
 }
 void Game::DrawCursor()
 {
+	const int CURSOR_OFFSET = 10;
+
 	gfx.DrawRectangle(
 		false,
-		(int)positions[cursor][0].x + CURSOR_OFFSET,
-		(int)positions[cursor][0].y + CURSOR_OFFSET,
-		(int)positions[cursor][3].x - CURSOR_OFFSET,
-		(int)positions[cursor][3].y - CURSOR_OFFSET,
+		(int)tilePositions[cursor][0].x + CURSOR_OFFSET,
+		(int)tilePositions[cursor][0].y + CURSOR_OFFSET,
+		(int)tilePositions[cursor][3].x - CURSOR_OFFSET,
+		(int)tilePositions[cursor][3].y - CURSOR_OFFSET,
 		Red);
 }
 void Game::DrawTileBorders()
@@ -558,49 +1007,6 @@ void Game::DrawTileBorders()
 				T.GetPosition()[0],
 				T.GetPosition()[3],
 				Black);
-		}
-	}
-}
-
-void Game::DrawBackground()
-{
-	Math::TextureVertex topleft;
-	Math::TextureVertex topright;
-	Math::TextureVertex bottomleft;
-	Math::TextureVertex bottomright;
-
-	const int ROWS = 2;
-	const int COLS = 3;
-	const float ROW_HEIGHT = (float)Graphics::WINDOW_HEIGHT / ROWS;
-	const float COL_WIDTH = (float)Graphics::WINDOW_WIDTH / COLS;
-
-	const Vector TOP_LEFT = { 0.0f,0.0f };
-	const Vector TOP_RIGHT = { 1.0f,0.0f };
-	const Vector BOTTOM_LEFT = { 0.0f,1.0f };
-	const Vector BOTTOM_RIGHT = { 1.0f,1.0f };
-
-	float left = 0;
-	float top = 0;
-	float right = 0;
-	float bottom = 0;
-
-	for (int row = 0; row < ROWS; row++)
-	{
-		for (int col = 0; col < COLS; col++)
-		{
-			left = col * COL_WIDTH;
-			top = row * ROW_HEIGHT;
-			right = left + COL_WIDTH;
-			bottom = top + ROW_HEIGHT;
-
-			topleft = { {left, top}, TOP_LEFT };
-			topright = { {right, top},TOP_RIGHT };
-			bottomleft = { {left, bottom},BOTTOM_LEFT};
-			bottomright = { {right, bottom},BOTTOM_RIGHT };
-
-			const int NUM = 2;
-			gfx.DrawTriangleTex(topleft, topright, bottomleft, backgroundImages[NUM]);
-			gfx.DrawTriangleTex(topright, bottomright, bottomleft, backgroundImages[NUM]);
 		}
 	}
 }

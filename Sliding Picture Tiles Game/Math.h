@@ -79,7 +79,15 @@ namespace Math
 	template <typename T0, typename T1>
 	static auto Ternary( bool Expression1, T0 Expression2, T1 Expression3 )
 	{
-		return (Expression1) ? Expression2 : Expression3;
+		if (Expression1)
+		{
+			return Expression2;
+		}
+		else
+		{
+			return Expression3;
+		}
+		//return (Expression1) ? Expression2 : Expression3;
 	}
 
 	static	int		Modulo( const int& A, const int& B )

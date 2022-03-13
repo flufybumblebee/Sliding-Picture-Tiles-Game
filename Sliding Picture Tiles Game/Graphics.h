@@ -76,7 +76,17 @@ public:
 			X < WINDOW_WIDTH &&
 			Y < WINDOW_HEIGHT )
 		{
-			pSysBuffer[Graphics::WINDOW_WIDTH * Y + X] = COLOR;
+			pSysBuffer[WINDOW_WIDTH * Y + X] = COLOR;
+		}
+	}
+	void	DrawPixelAlpha(const int& X, const int& Y, const Color& COLOR)
+	{
+		if (X >= 0 &&
+			Y >= 0 &&
+			X < WINDOW_WIDTH &&
+			Y < WINDOW_HEIGHT)
+		{
+			pSysBuffer[WINDOW_WIDTH * Y + X] = Math::AlphaBlend(pSysBuffer[Graphics::WINDOW_WIDTH * Y + X], COLOR);
 		}
 	}
 	Color	GetPixel( const unsigned int& X, const unsigned int& Y )
@@ -177,7 +187,7 @@ public:
 	void DrawTile(const Tile& T, const Surface& IMAGE);
 	void DrawVector( const Math::Vector& V, const Color& COLOR );
 	void DrawVector( const Math::Vector& A, const Math::Vector& B, const Color& COLOR );
-
+	void Blur();
 
 	// IMAGE
 	void DrawImage( const bool& ALPHA, const int& X0, const int& Y0, const int& X1, const int& Y1, const Surface& S );
