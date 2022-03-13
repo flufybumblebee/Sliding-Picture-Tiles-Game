@@ -120,4 +120,19 @@ namespace Colors
 	static constexpr Color Yellow = MakeRGB( 255u,255u,0u );
 	static constexpr Color Cyan = MakeRGB( 0u,255u,255u );
 	static constexpr Color Magenta = MakeRGB( 255u,0u,255u );
+
+	static	unsigned char	AlphaBlend(const unsigned char& A, const unsigned char& B, const unsigned char& ALPHA)
+	{
+		const unsigned char NUM = 255u;
+		return (B * ALPHA + A * (NUM - ALPHA)) / NUM;
+	}
+
+	static	Color			AlphaBlend(const Color& A, const Color& B)
+	{
+		const unsigned char RED = AlphaBlend(A.GetR(), B.GetR(), B.GetA());
+		const unsigned char GREEN = AlphaBlend(A.GetG(), B.GetG(), B.GetA());
+		const unsigned char BLUE = AlphaBlend(A.GetB(), B.GetB(), B.GetA());
+
+		return { RED,GREEN,BLUE };
+	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vector.h"
+
 #include <cmath>
 
 namespace Math
@@ -34,7 +35,7 @@ namespace Math
 		~Rect() = default;
 	public:
 				
-		Rect& Rect::operator=( const Rect& RHS )
+		Rect& operator=( const Rect& RHS )
 		{
 			this->left = RHS.left;
 			this->top = RHS.top;
@@ -43,18 +44,18 @@ namespace Math
 
 			return *this;
 		}
-		void    Rect::Set( const Rect& RECT )
+		void    Set( const Rect& RECT )
 		{
 			this->left /****/ = std::min( left, right );
 			this->right /***/ = std::max( left, right );
 			this->top /*****/ = std::min( top, bottom );
 			this->bottom /**/ = std::max( top, bottom );
 		}
-		float   Rect::Width() const
+		float   Width() const
 		{
 			return this->right - this->left;
 		}
-		float   Rect::Height() const
+		float   Height() const
 		{
 			return this->bottom - this->top;
 		}

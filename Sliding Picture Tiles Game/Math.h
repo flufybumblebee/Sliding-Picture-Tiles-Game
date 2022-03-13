@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Colors.h"		// Color
 #include "Vector.h"		// Vector
 #include "Matrix.h"		// Matrix
 #include "Lines.h"		// LineSegment, (Todo: Ray, Line)
@@ -316,7 +315,7 @@ namespace Math
 
 		return {LEFT,TOP,RIGHT,BOTTOM};
 	}
-	static	RectF	MakeRect( const Math::LineSegment& LS )
+	static	RectF	MakeRect( const LineSegment& LS )
 	{
 		const float LEFT = std::min( LS.a.x, LS.b.x );
 		const float TOP = std::min( LS.a.y, LS.b.y );
@@ -355,14 +354,6 @@ namespace Math
 		assert( ALPHA <= 255 );
 		const unsigned char NUM = 255u;
 		return (B * ALPHA + A * (NUM - ALPHA)) / NUM;
-	}
-	static	Color			AlphaBlend( const Color& A, const Color& B )
-	{
-		const unsigned char RED		= AlphaBlend( A.GetR(), B.GetR(), B.GetA() );
-		const unsigned char GREEN	= AlphaBlend( A.GetG(), B.GetG(), B.GetA() );
-		const unsigned char BLUE	= AlphaBlend( A.GetB(), B.GetB(), B.GetA() );
-
-		return {RED,GREEN,BLUE};
 	}
 
 	static	std::pair<bool, Vector>	Intersection( const LineSegment& A, const LineSegment& B )

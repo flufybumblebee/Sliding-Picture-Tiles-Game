@@ -86,7 +86,7 @@ public:
 			X < WINDOW_WIDTH &&
 			Y < WINDOW_HEIGHT)
 		{
-			pSysBuffer[WINDOW_WIDTH * Y + X] = Math::AlphaBlend(pSysBuffer[Graphics::WINDOW_WIDTH * Y + X], COLOR);
+			pSysBuffer[WINDOW_WIDTH * Y + X] = Colors::AlphaBlend(pSysBuffer[Graphics::WINDOW_WIDTH * Y + X], COLOR);
 		}
 	}
 	Color	GetPixel( const unsigned int& X, const unsigned int& Y )

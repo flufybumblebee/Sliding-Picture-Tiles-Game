@@ -1,6 +1,6 @@
 #pragma once
 
-//#include "Vector.h" // Math::Vector
+#include "Vector.h" // Math::Vector
 
 #include <array>	// array
 #include <vector>	// vector
@@ -301,7 +301,7 @@ namespace Math
 			*/
 
 		std::array<const float, 4> copy( { V.x,V.y,V.z,V.w } );
-		std::array<float, 4> result;
+		std::array<float, 4> result{};
 
 		float sum = 0.0f;
 		for( size_t row = 0u; row < 4u; row++ )

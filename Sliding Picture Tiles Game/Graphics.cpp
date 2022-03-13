@@ -675,7 +675,7 @@ void Graphics::DrawImage( const bool& ALPHA, const int& LEFT, const int& TOP, co
 					const Color C0 = GetPixel( ix, iy );
 					const Color C1 = S.GetPixel( x, y );
 
-					DrawPixel( (int)ix, (int)iy, AlphaBlend( C0, C1 ) );
+					DrawPixel( (int)ix, (int)iy, Colors::AlphaBlend( C0, C1 ) );
 				}
 			}
 		}
