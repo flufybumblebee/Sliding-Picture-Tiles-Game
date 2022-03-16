@@ -26,12 +26,25 @@
 #include "Timer.h"
 #include "Surface.h"
 
-#include "Maths.h"
+#include <Maths.h>
 #include "Tile.h"
 
 #include <array>
 #include <vector>
 #include <string>
+
+namespace BUTTON
+{
+	const unsigned int SETTINGS		= 0u;
+	const unsigned int MOUSE		= 1u;
+	const unsigned int KEYBOARD		= 2u;
+	const unsigned int CONTROLLER	= 3u;
+	const unsigned int ARROW_UP		= 4u;
+	const unsigned int ARROW_DOWN	= 5u;
+	const unsigned int NEW_GAME		= 6u;
+	const unsigned int ARROW_UP_2	= 7u;
+	const unsigned int ARROW_DOWN_2	= 8u;
+}
 
 class Game
 {
@@ -55,9 +68,17 @@ public:
 	float	timeNew		= 0.0f;
 
 	int		nMoves		= 0;
-	int		imageNum	= 0;
-	int		cursor		= 0;	
 	int		prevDir		= 0;
+
+	unsigned int imageNum	= 0;
+	unsigned int cursor		= 0;	
+	
+	unsigned int rows		= 3; // default = 3
+	unsigned int cols		= 3; // default = 3
+
+	unsigned int nextRows	= rows;
+	unsigned int nextCols	= cols;			
+	
 
 	bool	isKeyboard		= false;
 
@@ -74,20 +95,14 @@ public:
 
 	bool	soundPlayed		= false;
 
-	bool	mouseOverTiles	= false;
-
-	const float FRAME_TIME = 15.0f;	
-	
-	int rows = 3;
-	int cols = 3;
-
-	//const int MOVES_MAX	= SIZE * 3;
-	
+	std::vector<bool> mouseOver;
 
 	std::vector<Surface> backgroundImages;
 	std::vector<Surface> buttonImages;
 	std::vector<Surface> tileImages;
+	std::vector<Surface> digitImages;
 
+	std::vector<std::array<Math::Vector, 4>> digitPositions;
 	std::vector<std::array<Math::Vector, 4>> buttonPositions;
 	std::vector<std::array<Math::Vector, 4>> tilePositions;
 	std::vector<std::array<Math::Vector, 4>> tileTexCoords;
@@ -113,7 +128,9 @@ public:
 	void SetBackgroundImages();
 	void SetButtonImages();
 	void SetTileImages();
+	void SetDigitImages();
 
+	void SetDigitPositions();
 	void SetButtonPositions();
 	void SetTileTextureCoordinates();
 	void SetTilePositions();
@@ -127,20 +144,28 @@ public:
 
 	void GetFrameTime();
 
-	void MoveCursor();
 	void MoveTile();
 
+	void RestartGame();
+	void NewGame();
+
 	void CheckForGameOver();
-	void CheckForGameReset();
-	void CheckForGameExit();
 
 	void DrawBackground();
 	void DrawCounter();
 	void DrawTimer();
+
 	void DrawButtonSettings();
 	void DrawButtonMouse();
 	void DrawButtonKeyboard();
 	void DrawButtonController();
+	void DrawButtonArrowUp();
+	void DrawButtonArrowDown();
+	void DrawButtonNewGame();
+	void DrawButtonArrowUp2();
+	void DrawButtonArrowDown2();
+
+	void DrawDigit(const std::array<Math::Vector,4>& POSITION, const int& number);
 	void DrawSettings();
 	void DrawTiles();
 	void DrawCursor();
@@ -152,7 +177,8 @@ public:
 NOTES:
 
 TO DO (BUGS):
-
+keyboard can't access access settings
+mouse can't start new game
 
 TO DO (FEATURES):
 move counter
