@@ -56,14 +56,9 @@ Game::Game(MainWindow& wnd)
 	SetTileTextureCoordinates();
 	SetTilePositions();
 	SetTiles();
+	SetTilesRect();
 
-	timer.StartWatch();
-
-	const int L = (int)tilePositions.front()[0].x;
-	const int T = (int)tilePositions.front()[0].y;
-	const int R = (int)tilePositions.back()[3].x;
-	const int B = (int)tilePositions.back()[3].y;
-	tileRect = { L,T,R,B };
+	timer.StartWatch();	
 }
 
 void Game::Go()
@@ -205,17 +200,7 @@ void Game::Update()
 			{
 				const float MOUSE_X = (float)wnd.mouse.GetPosX();
 				const float MOUSE_Y = (float)wnd.mouse.GetPosY();
-				if (MOUSE_X >= tileRect.left &&
-					MOUSE_X <= tileRect.right &&
-					MOUSE_Y >= tileRect.top &&
-					MOUSE_Y <= tileRect.bottom)
-				{
-
-				}
-				else
-				{
-
-				}
+				
 				const float BUTTON_L = buttonPositions[0][0].x;
 				const float BUTTON_R = buttonPositions[0][3].x;
 				const float BUTTON_T = buttonPositions[0][0].y;
@@ -226,9 +211,8 @@ void Game::Update()
 					MOUSE_X <= BUTTON_R &&
 					MOUSE_Y >= BUTTON_T &&
 					MOUSE_Y <= BUTTON_B)
-				{
-					// mouse over settings button
-					mouseOver = true;
+				{					
+					mouseOver = true; // mouse over settings button
 				}
 				else mouseOver = false;
 
@@ -519,6 +503,16 @@ void Game::RandomiseTileImage()
 	}
 }
 
+void Game::SetTilesRect()
+{
+	assert(tilePositions.size() >= 2);
+	const int L = (int)tilePositions.front()[0].x;
+	const int T = (int)tilePositions.front()[0].y;
+	const int R = (int)tilePositions.back()[3].x;
+	const int B = (int)tilePositions.back()[3].y;
+	tilesRect = { L,T,R,B };
+}
+
 int  Game::GetTileIndex(const int& POS)
 {
 	for (int i = 0; i < tiles.size(); i++)
@@ -570,26 +564,35 @@ void Game::MoveCursor()
 			const int MOUSE_X = wnd.mouse.GetPosX();
 			const int MOUSE_Y = wnd.mouse.GetPosY();
 
-			int left = 0;
-			int top = 0;
-			int right = 0;
-			int bottom = 0;
-
-			for (const Tile& T : tiles)
+			if (MOUSE_X >= tilesRect.left &&
+				MOUSE_X <= tilesRect.right &&
+				MOUSE_Y >= tilesRect.top &&
+				MOUSE_Y <= tilesRect.bottom)
 			{
-				left = (int)T.GetPosition()[0].x;
-				top = (int)T.GetPosition()[0].y;
-				right = (int)T.GetPosition()[3].x;
-				bottom = (int)T.GetPosition()[3].y;
+				mouseOverTiles = true;
 
-				if (MOUSE_X >= left &&
-					MOUSE_X <= right &&
-					MOUSE_Y >= top &&
-					MOUSE_Y <= bottom)
+				int left	= 0;
+				int top		= 0;
+				int right	= 0;
+				int bottom	= 0;
+
+				for (const Tile& T : tiles)
 				{
-					cursor = T.GetPos();
+					left	= (int)T.GetPosition()[0].x;
+					top		= (int)T.GetPosition()[0].y;
+					right	= (int)T.GetPosition()[3].x;
+					bottom	= (int)T.GetPosition()[3].y;
+
+					if (MOUSE_X >= left &&
+						MOUSE_X <= right &&
+						MOUSE_Y >= top &&
+						MOUSE_Y <= bottom)
+					{
+						cursor = T.GetPos();
+					}
 				}
 			}
+			else mouseOverTiles = false;			
 		}
 
 		break;
@@ -672,7 +675,7 @@ void Game::MoveTile()
 
 			if (!mousePressed)
 			{
-				if (wnd.mouse.LeftIsPressed())
+				if (wnd.mouse.LeftIsPressed() && mouseOverTiles)
 				{
 					mousePressed = true;
 
@@ -849,7 +852,7 @@ void Game::CheckForGameReset()
 			SetTileTextureCoordinates();
 			SetTilePositions();
 			SetTiles();
-
+			SetTilesRect();
 			gameState = GameState::Setup;
 		}
 	}

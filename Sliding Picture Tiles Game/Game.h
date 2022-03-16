@@ -74,6 +74,8 @@ public:
 
 	bool	soundPlayed		= false;
 
+	bool	mouseOverTiles	= false;
+
 	const float FRAME_TIME = 15.0f;	
 	
 	int rows = 3;
@@ -91,7 +93,7 @@ public:
 	std::vector<std::array<Math::Vector, 4>> tileTexCoords;
 	std::vector <Tile> tiles;
 
-	Math::RectI tileRect;
+	Math::RectI tilesRect;
 
 	enum class ControlState
 	{
@@ -116,6 +118,7 @@ public:
 	void SetTileTextureCoordinates();
 	void SetTilePositions();
 	void SetTiles();
+	void SetTilesRect();
 	void RandomiseTileImage();
 	void NextTileImage();
 
@@ -149,8 +152,7 @@ public:
 NOTES:
 
 TO DO (BUGS):
-cursor is on a tile and the mouse moves off that tile and...
-... the mouse is clicked the tile still moves
+
 
 TO DO (FEATURES):
 move counter
