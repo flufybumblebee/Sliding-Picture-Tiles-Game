@@ -525,54 +525,64 @@ void Graphics::DrawLineSegment( const int& X0, const int& Y0, const int& X1, con
 }
 void Graphics::DrawLineSegment( const Vector& A, const Vector& B, const float& WIDTH, const Color& COLOR )
 {
-	const Vector NORMAL( Normalize( B - A ) );
+	auto length = [](const Vector& V)
+	{
+		return sqrt(V.x * V.x + V.y * V.y + V.z * V.z);
+	};
+
+	auto normalise = [](const float& LENGTH, const Vector& V)
+	{
+		return Vector(V.x / LENGTH, V.y / LENGTH, V.z / LENGTH);
+	};
+	const float LENGTH = length(B-A);
+	const Vector NORMAL( normalise( LENGTH, B - A ) );
 	const Vector OFFSET( Multiply( Rotate90CCW( NORMAL ), max(1.0f,WIDTH / 2.0f )) );
 	const Vector V0( A - OFFSET );
 	const Vector V1( A + OFFSET );
 	const Vector V2( B - OFFSET );
-	const Vector V3( B + OFFSET );
+const Vector V3(B + OFFSET);
 
-	if(WIDTH > 1)
+if (WIDTH > 1)
+{
+	DrawTriangle(true, V0, V1, V2, COLOR);
+	DrawTriangle(true, V1, V2, V3, COLOR);
+}
+else
+{
+	DrawLineSegment(A, B, COLOR);
+}
+}
+void Graphics::DrawRectangle(const bool& FILLED, const int& X0, const int& Y0, const int& X1, const int& Y1, const Color& COLOR)
+{
+	const Math::Vector A((float)X0, (float)Y0); // top left
+	const Math::Vector B((float)X1, (float)Y0); // top right
+	const Math::Vector C((float)X1, (float)Y1); // bottom right
+	const Math::Vector D((float)X0, (float)Y1); // bottom left
+
+	if (FILLED)
 	{
-		DrawTriangle( true, V0, V1, V2, COLOR );
-		DrawTriangle( true, V1, V2, V3, COLOR );
+		DrawTriangle(true, A, B, C, COLOR);
+		DrawTriangle(true, C, D, A, COLOR);
 	}
 	else
 	{
-		DrawLineSegment( A, B, COLOR );
+		DrawLineSegment(A, B, COLOR); // top    left  to top    right
+		DrawLineSegment(B, C, COLOR); // top    right to bottom right
+		DrawLineSegment(C, D, COLOR); // bottom right to bottom left
+		DrawLineSegment(D, A, COLOR); // bottom left  to top    left
 	}
 }
-void Graphics::DrawRectangle( const bool& FILLED, const int& X0, const int& Y0, const int& X1, const int& Y1, const Color& COLOR )
+void Graphics::DrawCircle(const bool& FILLED, const int& X, const int& Y, const int& RADIUS, const Color& COLOR)
 {
-	const Math::Vector A( (float)X0, (float)Y0 ); // top left
-	const Math::Vector B( (float)X1, (float)Y0 ); // top right
-	const Math::Vector C( (float)X1, (float)Y1 ); // bottom right
-	const Math::Vector D( (float)X0, (float)Y1 ); // bottom left
-
-	if(FILLED)
+	if (FILLED)
 	{
-		DrawTriangle( true, A, B, C, COLOR );
-		DrawTriangle( true, C, D, A, COLOR );
-	}
-	else
-	{
-		DrawLineSegment( A, B, COLOR ); // top    left  to top    right
-		DrawLineSegment( B, C, COLOR ); // top    right to bottom right
-		DrawLineSegment( C, D, COLOR ); // bottom right to bottom left
-		DrawLineSegment( D, A, COLOR ); // bottom left  to top    left
-	}
-}
-void Graphics::DrawCircle( const bool& FILLED, const int& X, const int& Y, const int& RADIUS, const Color& COLOR )
-{
-	if(FILLED)
-	{
-		for(int y = Y - int(RADIUS + 0.5f); y < Y + int(RADIUS + 0.5f); y++)
+		for (int y = Y - int(RADIUS + 0.5f); y < Y + int(RADIUS + 0.5f); y++)
 		{
-			for(int x = X - int(RADIUS + 0.5f); x < X + int(RADIUS + 0.5f); x++)
+			for (int x = X - int(RADIUS + 0.5f); x < X + int(RADIUS + 0.5f); x++)
 			{
-				if( ((x - X) * (x - X) + (y - Y) * (y - Y)) < RADIUS * RADIUS )
+				if (((x - X) * (x - X) + (y - Y) * (y - Y)) < RADIUS * RADIUS)
 				{
-					DrawPixel( x, y, COLOR );
+					DrawPixel(x, y, COLOR);
 				}
 
 				/*if(Math::DistanceBetween( {X,Y}, {(float)x,(float)y} ) <= RADIUS)
@@ -584,25 +594,25 @@ void Graphics::DrawCircle( const bool& FILLED, const int& X, const int& Y, const
 	}
 	else
 	{
-		const double RADIUS_SQUARED = double( RADIUS ) * RADIUS;
-		const int XPIVOT = int( RADIUS * 0.70710678118f + 0.5f );
+		const double RADIUS_SQUARED = double(RADIUS) * RADIUS;
+		const int XPIVOT = int(RADIUS * 0.70710678118f + 0.5f);
 		int y = 0;
-		for(int x = 0; x <= XPIVOT; x++)
+		for (int x = 0; x <= XPIVOT; x++)
 		{
-			y = (int)(sqrt( RADIUS_SQUARED - double( x ) * x ) + 0.5);
-			DrawPixel( (int)X + x, (int)Y + y, COLOR );
-			DrawPixel( (int)X - x, (int)Y + y, COLOR );
-			DrawPixel( (int)X + x, (int)Y - y, COLOR );
-			DrawPixel( (int)X - x, (int)Y - y, COLOR );
-			DrawPixel( (int)X + y, (int)Y + x, COLOR );
-			DrawPixel( (int)X - y, (int)Y + x, COLOR );
-			DrawPixel( (int)X + y, (int)Y - x, COLOR );
-			DrawPixel( (int)X - y, (int)Y - x, COLOR );
+			y = (int)(sqrt(RADIUS_SQUARED - double(x) * x) + 0.5);
+			DrawPixel((int)X + x, (int)Y + y, COLOR);
+			DrawPixel((int)X - x, (int)Y + y, COLOR);
+			DrawPixel((int)X + x, (int)Y - y, COLOR);
+			DrawPixel((int)X - x, (int)Y - y, COLOR);
+			DrawPixel((int)X + y, (int)Y + x, COLOR);
+			DrawPixel((int)X - y, (int)Y + x, COLOR);
+			DrawPixel((int)X + y, (int)Y - x, COLOR);
+			DrawPixel((int)X - y, (int)Y - x, COLOR);
 		}
 	}
 }
 
-void Graphics::DrawTile( const Tile& T, const Surface& IMAGE )
+void Graphics::DrawTile(const Tile& T, const Surface& IMAGE)
 {
 	const TextureVertex T0 = { T.GetPosition()[0], T.GetTexCoord()[0] };
 	const TextureVertex T1 = { T.GetPosition()[1], T.GetTexCoord()[1] };
@@ -611,26 +621,48 @@ void Graphics::DrawTile( const Tile& T, const Surface& IMAGE )
 	DrawTriangleTex(T0, T1, T3, IMAGE);
 	DrawTriangleTex(T0, T3, T2, IMAGE);
 }
-void Graphics::DrawVector( const Vector& V, const Color& COLOR )
+void Graphics::DrawVector(const Vector& V, const Color& COLOR)
 {
-	DrawLineSegment( 0, 0, (int)V.x, (int)V.y, COLOR );
+	DrawLineSegment(0, 0, (int)V.x, (int)V.y, COLOR);
 
-	const Vector NORMAL( Normalize( V ) );
-	const Vector A( Multiply( NORMAL, 100.0f ) );
-	const Vector B( Add( A, Rotate( Multiply( NORMAL, 20.0f ), 60.0f ) ) );
-	const Vector C( Add( A, Rotate( Multiply( NORMAL, 20.0f ), -60.0f ) ) );
+	auto length = [](const Vector& V)
+	{
+		return sqrt(V.x * V.x + V.y * V.y + V.z * V.z);
+	};
 
-	DrawTriangle( true, A, B, C, Colors::White );
+	auto normalise = [](const float& LENGTH, const Vector& V)
+	{
+		return Vector(V.x / LENGTH, V.y / LENGTH, V.z / LENGTH);
+	};
+	
+	const float LENGTH = length(V);
+	const Vector NORMAL(normalise(LENGTH,V));
+	const Vector A(Multiply(NORMAL, 100.0f));
+	const Vector B(Add(A, Rotate(Multiply(NORMAL, 20.0f), 60.0f)));
+	const Vector C(Add(A, Rotate(Multiply(NORMAL, 20.0f), -60.0f)));
+
+	DrawTriangle(true, A, B, C, Colors::White);
 }
-void Graphics::DrawVector( const Vector& TAIL, const Vector& TOP, const Color& COLOR )
+void Graphics::DrawVector(const Vector& TAIL, const Vector& TOP, const Color& COLOR)
 {
+	auto length = [](const Vector& V)
+	{
+		return sqrt(V.x * V.x + V.y * V.y + V.z * V.z);
+	};
+
+	auto normalise = [](const float& LENGTH, const Vector& V)
+	{		
+		return Vector(V.x / LENGTH, V.y / LENGTH, V.z / LENGTH);
+	};
+
 	const Vector VECTOR( Subtract( TOP, TAIL ) );
-	const float	 LENGTH( Length(VECTOR) );
-	const Vector NORMAL( Normalize( VECTOR ) );
+	const float	 LENGTH(length(VECTOR));
+
+	const Vector NORMAL( normalise(LENGTH, VECTOR) );
 	const Vector A( Add(TAIL, Multiply( NORMAL, LENGTH ) ) );
 	const Vector B( Add( A, Rotate( Multiply( NORMAL, LENGTH / 10.0f ), 60.0f ) ) );
 	const Vector C( Add( A, Rotate( Multiply( NORMAL, LENGTH / 10.0f ), -60.0f ) ) );
-	const float  D( Length( Subtract( B, C ) ) );
+	const float  D(length( Subtract( B, C ) ) );
 	const Vector X0 = TAIL;
 	const Vector X1 = Subtract( TOP, Multiply( NORMAL, LENGTH - LENGTH * 0.95f ) );
 	

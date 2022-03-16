@@ -25,7 +25,7 @@
 #include "Colors.h"
 #include "GDIPlusManager.h"
 #include "Surface.h"
-#include "Math.h"
+#include "Maths.h"
 #include "Tile.h"
 
 class Graphics

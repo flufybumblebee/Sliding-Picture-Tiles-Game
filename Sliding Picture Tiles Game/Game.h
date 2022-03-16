@@ -26,7 +26,7 @@
 #include "Timer.h"
 #include "Surface.h"
 
-#include "Math.h"
+#include "Maths.h"
 #include "Tile.h"
 
 #include <array>
@@ -80,6 +80,7 @@ public:
 	int cols = 3;
 
 	//const int MOVES_MAX	= SIZE * 3;
+	
 
 	std::vector<Surface> backgroundImages;
 	std::vector<Surface> buttonImages;
@@ -148,19 +149,10 @@ public:
 NOTES:
 
 TO DO (BUGS):
-FIXED: unsolvable patterns
-FIXED: tiles no longer sliding
-FIXED: AI shouldn't be moving the same tile as the last moved tile
-FIXED: borders dissapearing before the last tile finishes moving
-FIXED: gap tile appearing before the last tile finishes moving
-FIXED: cursor now appears only after setup in the gap square
-is cursor is on a tile and the mouse moves off that tile and...
+cursor is on a tile and the mouse moves off that tile and...
 ... the mouse is clicked the tile still moves
 
 TO DO (FEATURES):
-DONE: keyboard support
-DONE: mouse support 
-DONE: sounds
 move counter
 timer (start when first tile moved, stops when all tiles in correct possitions)
 select the number of tiles
