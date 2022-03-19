@@ -35,15 +35,25 @@
 
 namespace BUTTON
 {
-	const unsigned int SETTINGS		= 0u;
-	const unsigned int MOUSE		= 1u;
-	const unsigned int KEYBOARD		= 2u;
-	const unsigned int CONTROLLER	= 3u;
-	const unsigned int ARROW_UP		= 4u;
-	const unsigned int ARROW_DOWN	= 5u;
-	const unsigned int NEW_GAME		= 6u;
-	const unsigned int ARROW_UP_2	= 7u;
-	const unsigned int ARROW_DOWN_2	= 8u;
+	const unsigned int SETTINGS			= 0u;
+	const unsigned int MOUSE			= 1u;
+	const unsigned int KEYBOARD			= 2u;
+	const unsigned int CONTROLLER		= 3u;
+	const unsigned int INCREASE_ROWS	= 4u;
+	const unsigned int DECREASE_ROWS	= 5u;
+	const unsigned int NEW_GAME			= 6u;
+	const unsigned int INCREASE_COLS	= 7u;
+	const unsigned int DECREASE_COLS	= 8u;
+}
+
+namespace IMAGE
+{
+	const unsigned int SETTINGS = 0u;
+	const unsigned int MOUSE = 1u;
+	const unsigned int KEYBOARD = 2u;
+	const unsigned int CONTROLLER = 3u;
+	const unsigned int TRIANGLE = 4u;
+	const unsigned int NEW_GAME = 5u;
 }
 
 class Game
@@ -95,12 +105,15 @@ public:
 
 	bool	soundPlayed		= false;
 
+	bool isTesting = false;
+
 	std::vector<bool> mouseOver;
 
 	std::vector<Surface> backgroundImages;
 	std::vector<Surface> buttonImages;
 	std::vector<Surface> tileImages;
 	std::vector<Surface> digitImages;
+	std::vector<Surface> symbolImages;
 
 	std::vector<std::array<Math::Vector, 4>> digitPositions;
 	std::vector<std::array<Math::Vector, 4>> buttonPositions;
@@ -125,10 +138,14 @@ public:
 	} gameState;
 
 public:
+
+	void ReadDirectory(const std::wstring& FILENAME, std::vector<std::wstring>& v);
+
 	void SetBackgroundImages();
 	void SetButtonImages();
 	void SetTileImages();
 	void SetDigitImages();
+	void SetSymbolImages();
 
 	void SetDigitPositions();
 	void SetButtonPositions();
@@ -152,21 +169,22 @@ public:
 	void CheckForGameOver();
 
 	void DrawBackground();
-	void DrawCounter();
-	void DrawTimer();
 
 	void DrawButtonSettings();
 	void DrawButtonMouse();
 	void DrawButtonKeyboard();
 	void DrawButtonController();
-	void DrawButtonArrowUp();
-	void DrawButtonArrowDown();
+	void DrawButtonIncreaseRows();
+	void DrawButtonDecreaseRows();
 	void DrawButtonNewGame();
-	void DrawButtonArrowUp2();
-	void DrawButtonArrowDown2();
+	void DrawButtonIncreaseCols();
+	void DrawButtonDecreaseCols();
 
 	void DrawDigit(const std::array<Math::Vector,4>& POSITION, const int& number);
-	void DrawSettings();
+
+	void DrawSymbolRows();
+	void DrawSymbolCols();
+
 	void DrawTiles();
 	void DrawCursor();
 	void DrawTileBorders();
@@ -178,7 +196,6 @@ NOTES:
 
 TO DO (BUGS):
 keyboard can't access access settings
-mouse can't start new game
 
 TO DO (FEATURES):
 move counter
@@ -187,13 +204,21 @@ select the number of tiles
 select the number of tile shuffles
 
 TO DO (SPECIAL FEATURES):
-be able to add custom images
+be able to add custom tile images DONE!
 save/load game
 controller support
 auto solver
 convert tiles to greyscale that are in the wrong place
 victory animation
 looping video tiles / moving gif tiles
-use still image from a video for the tiles then play the video when completed 
+use still image from a video for the tiles...
+...then play the video when completed 
 
+TO DO: (ACCESSABILITY):
+audio for tiles (presses, cursor over)
+audio for buttons (presses, cursor over)
+audio for rows and column counters
+audio move counter
+color blind options
+larger fonts options
 */

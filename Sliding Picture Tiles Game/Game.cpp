@@ -25,6 +25,8 @@
 
 #include <utility>
 #include <random>
+
+#include <iostream>
 #include <string>
 #include <sstream>
 
@@ -50,6 +52,7 @@ Game::Game(MainWindow& wnd)
 	SetBackgroundImages();
 	SetButtonImages();
 	SetDigitImages();
+	SetSymbolImages();
 	SetTileImages();
 
 	RandomiseTileImage();
@@ -73,7 +76,7 @@ void Game::Go()
 void Game::Update()
 {
 	#ifdef NDEBUG
-	const int MOVES_MAX = rows * cols * 3;
+	const int MOVES_MAX = rows * cols * 3 - 1;
 	GetFrameTime();
 	#else
 	const int MOVES_MAX = /*rows * cols * */1;
@@ -205,32 +208,32 @@ void Game::Update()
 				mouseOver.assign(10, false);
 
 				{
-					const float L = buttonPositions[BUTTON::ARROW_UP][0].x;
-					const float R = buttonPositions[BUTTON::ARROW_UP][3].x;
-					const float T = buttonPositions[BUTTON::ARROW_UP][0].y;
-					const float B = buttonPositions[BUTTON::ARROW_UP][3].y;
+					const float L = buttonPositions[BUTTON::INCREASE_ROWS][0].x;
+					const float R = buttonPositions[BUTTON::INCREASE_ROWS][3].x;
+					const float T = buttonPositions[BUTTON::INCREASE_ROWS][0].y;
+					const float B = buttonPositions[BUTTON::INCREASE_ROWS][3].y;
 
 					if (MOUSE_X >= L &&
 						MOUSE_X <= R &&
 						MOUSE_Y >= T &&
 						MOUSE_Y <= B)
 					{
-						mouseOver[BUTTON::ARROW_UP] = true;
+						mouseOver[BUTTON::INCREASE_ROWS] = true;
 					}
 				}				
 
 				{
-					const float L = buttonPositions[BUTTON::ARROW_DOWN][0].x;
-					const float R = buttonPositions[BUTTON::ARROW_DOWN][3].x;
-					const float T = buttonPositions[BUTTON::ARROW_DOWN][0].y;
-					const float B = buttonPositions[BUTTON::ARROW_DOWN][3].y;
+					const float L = buttonPositions[BUTTON::DECREASE_ROWS][0].x;
+					const float R = buttonPositions[BUTTON::DECREASE_ROWS][3].x;
+					const float T = buttonPositions[BUTTON::DECREASE_ROWS][0].y;
+					const float B = buttonPositions[BUTTON::DECREASE_ROWS][3].y;
 
 					if (MOUSE_X >= L &&
 						MOUSE_X <= R &&
 						MOUSE_Y >= T &&
 						MOUSE_Y <= B)
 					{
-						mouseOver[BUTTON::ARROW_DOWN] = true;
+						mouseOver[BUTTON::DECREASE_ROWS] = true;
 					}
 				}
 
@@ -250,32 +253,32 @@ void Game::Update()
 				}
 
 				{
-					const float L = buttonPositions[BUTTON::ARROW_UP_2][0].x;
-					const float R = buttonPositions[BUTTON::ARROW_UP_2][3].x;
-					const float T = buttonPositions[BUTTON::ARROW_UP_2][0].y;
-					const float B = buttonPositions[BUTTON::ARROW_UP_2][3].y;
+					const float L = buttonPositions[BUTTON::INCREASE_COLS][0].x;
+					const float R = buttonPositions[BUTTON::INCREASE_COLS][3].x;
+					const float T = buttonPositions[BUTTON::INCREASE_COLS][0].y;
+					const float B = buttonPositions[BUTTON::INCREASE_COLS][3].y;
 
 					if (MOUSE_X >= L &&
 						MOUSE_X <= R &&
 						MOUSE_Y >= T &&
 						MOUSE_Y <= B)
 					{
-						mouseOver[BUTTON::ARROW_UP_2] = true;
+						mouseOver[BUTTON::INCREASE_COLS] = true;
 					}
 				}
 
 				{
-					const float L = buttonPositions[BUTTON::ARROW_DOWN_2][0].x;
-					const float R = buttonPositions[BUTTON::ARROW_DOWN_2][3].x;
-					const float T = buttonPositions[BUTTON::ARROW_DOWN_2][0].y;
-					const float B = buttonPositions[BUTTON::ARROW_DOWN_2][3].y;
+					const float L = buttonPositions[BUTTON::DECREASE_COLS][0].x;
+					const float R = buttonPositions[BUTTON::DECREASE_COLS][3].x;
+					const float T = buttonPositions[BUTTON::DECREASE_COLS][0].y;
+					const float B = buttonPositions[BUTTON::DECREASE_COLS][3].y;
 
 					if (MOUSE_X >= L &&
 						MOUSE_X <= R &&
 						MOUSE_Y >= T &&
 						MOUSE_Y <= B)
 					{
-						mouseOver[BUTTON::ARROW_DOWN_2] = true;
+						mouseOver[BUTTON::DECREASE_COLS] = true;
 					}
 				}
 
@@ -318,28 +321,28 @@ void Game::Update()
 					{
 						mousePressed = true;
 
-						if (mouseOver[BUTTON::ARROW_UP])
+						if (mouseOver[BUTTON::INCREASE_ROWS])
 						{
 							if (nextRows < 9)
 							{
 								nextRows++;
 							}
 						}
-						else if (mouseOver[BUTTON::ARROW_DOWN])
+						else if (mouseOver[BUTTON::DECREASE_ROWS])
 						{
 							if (nextRows > 2)
 							{
 								nextRows--;
 							}
 						}
-						else if (mouseOver[BUTTON::ARROW_UP_2])
+						else if (mouseOver[BUTTON::INCREASE_COLS])
 						{
 							if (nextCols < 9)
 							{
 								nextCols++;
 							}
 						}
-						else if (mouseOver[BUTTON::ARROW_DOWN_2])
+						else if (mouseOver[BUTTON::DECREASE_COLS])
 						{
 							if (nextCols > 2)
 							{
@@ -534,19 +537,57 @@ void Game::Draw()
 			DrawTiles();
 			if(!gameOver) DrawCursor();
 			if(!gameOver) DrawTileBorders();
-			DrawButtonSettings();
-			DrawButtonArrowUp();
-			DrawButtonArrowDown();
-			DrawButtonArrowUp2();
-			DrawButtonArrowDown2();
+			//DrawButtonSettings();
+
+			DrawButtonIncreaseRows();
 			DrawDigit(digitPositions[0], nextRows);
+			DrawButtonDecreaseRows();
+
+			DrawButtonIncreaseCols();
 			DrawDigit(digitPositions[1], nextCols);
+			DrawButtonDecreaseCols();
+
 			DrawButtonNewGame();
+
+			DrawSymbolRows();
+			DrawSymbolCols();
+
 			break;
 	}
 }
 
 //---------------------------------------------------
+
+void Game::ReadDirectory(const std::wstring& FILENAME, std::vector<std::wstring>& v)
+{
+	// REQUIRES: Windows.h, vector.h, string.h
+	
+	std::wstring pattern(FILENAME);
+	pattern.append(L"\\*");
+	WIN32_FIND_DATA data;
+	HANDLE hFind;
+	if ((hFind = FindFirstFile(pattern.c_str(), &data)) != INVALID_HANDLE_VALUE) {
+		do {
+			v.push_back(std::wstring(data.cFileName));
+		} while (FindNextFile(hFind, &data) != 0);
+		FindClose(hFind);
+	}
+
+	/*
+	EXAMPLE: LOAD IMAGES INTO MEMORY
+	const wstring FOLDER_NAME = L"DriveLetter:\\FolderName";
+	std::vector<wstring> v;
+	ReadDirectory(FOLDER_NAME, v);
+
+	for (size_t i = 2; i < v.size(); i++)
+	{
+		tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\" + v[i]));
+	}
+
+	NOTES:
+	i = 2 because the first two items are not files
+	*/
+}
 
 
 void Game::SetButtonImages()
@@ -560,10 +601,20 @@ void Game::SetButtonImages()
 }
 void Game::SetTileImages()
 {
-	tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\mountain.jpg"));
+	const wstring FOLDER_NAME = L"C:\\Users\\Bumble\\source\\repos\\Sliding Picture Tiles Game\\Sliding Picture Tiles Game\\Images\\Tiles";
+	std::vector<wstring> v;
+	ReadDirectory(FOLDER_NAME, v);
+	assert(v.size() > 2);
+
+	for (size_t i = 2; i < v.size(); i++)
+	{
+		tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\" + v[i]));
+	}
+
+	/*tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\mountain.jpg"));
 	tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\earth.jpg"));
 	tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\squirrel.jpg"));
-	tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\pretty.jpg"));
+	tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\pretty.jpg"));*/
 }
 void Game::SetDigitImages()
 {
@@ -577,6 +628,11 @@ void Game::SetDigitImages()
 	digitImages.push_back(Surface::FromFile(L"Images\\Digits\\digit_7.png"));
 	digitImages.push_back(Surface::FromFile(L"Images\\Digits\\digit_8.png"));
 	digitImages.push_back(Surface::FromFile(L"Images\\Digits\\digit_9.png"));
+}
+void Game::SetSymbolImages()
+{
+	symbolImages.push_back(Surface::FromFile(L"Images\\Symbols\\Rows.png"));
+	symbolImages.push_back(Surface::FromFile(L"Images\\Symbols\\Cols.png"));
 }
 void Game::SetBackgroundImages()
 {
@@ -1081,29 +1137,29 @@ void Game::DrawButtonController()
 
 	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
 }
-void Game::DrawButtonArrowUp()
+void Game::DrawButtonIncreaseRows()
 {
-	TextureVertex tv0{ buttonPositions[BUTTON::ARROW_UP][0], { 0.0f,0.0f } };
-	TextureVertex tv1{ buttonPositions[BUTTON::ARROW_UP][1], { 1.0f,0.0f } };
-	TextureVertex tv2{ buttonPositions[BUTTON::ARROW_UP][2], { 0.0f,1.0f } };
-	TextureVertex tv3{ buttonPositions[BUTTON::ARROW_UP][3], { 1.0f,1.0f } };
+	TextureVertex tv0{ buttonPositions[BUTTON::INCREASE_ROWS][0], { 0.0f,0.0f } };
+	TextureVertex tv1{ buttonPositions[BUTTON::INCREASE_ROWS][1], { 1.0f,0.0f } };
+	TextureVertex tv2{ buttonPositions[BUTTON::INCREASE_ROWS][2], { 0.0f,1.0f } };
+	TextureVertex tv3{ buttonPositions[BUTTON::INCREASE_ROWS][3], { 1.0f,1.0f } };
 
-	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[BUTTON::ARROW_UP]);
-	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[BUTTON::ARROW_UP]);
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[IMAGE::TRIANGLE]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[IMAGE::TRIANGLE]);
 
-	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+	if(isTesting) gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
 }
-void Game::DrawButtonArrowDown()
+void Game::DrawButtonDecreaseRows()
 {
-	TextureVertex tv0{ buttonPositions[BUTTON::ARROW_DOWN][0], { 0.0f,1.0f } };
-	TextureVertex tv1{ buttonPositions[BUTTON::ARROW_DOWN][1], { 1.0f,1.0f } };
-	TextureVertex tv2{ buttonPositions[BUTTON::ARROW_DOWN][2], { 0.0f,0.0f } };
-	TextureVertex tv3{ buttonPositions[BUTTON::ARROW_DOWN][3], { 1.0f,0.0f } };
+	TextureVertex tv0{ buttonPositions[BUTTON::DECREASE_ROWS][0], { 0.0f,1.0f } };
+	TextureVertex tv1{ buttonPositions[BUTTON::DECREASE_ROWS][1], { 1.0f,1.0f } };
+	TextureVertex tv2{ buttonPositions[BUTTON::DECREASE_ROWS][2], { 0.0f,0.0f } };
+	TextureVertex tv3{ buttonPositions[BUTTON::DECREASE_ROWS][3], { 1.0f,0.0f } };
 
-	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[BUTTON::ARROW_UP]);
-	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[BUTTON::ARROW_UP]);
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[IMAGE::TRIANGLE]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[IMAGE::TRIANGLE]);
 
-	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+	if(isTesting) gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
 }
 void Game::DrawButtonNewGame()
 {
@@ -1112,34 +1168,34 @@ void Game::DrawButtonNewGame()
 	TextureVertex tv2{ buttonPositions[BUTTON::NEW_GAME][2], { 0.0f,1.0f } };
 	TextureVertex tv3{ buttonPositions[BUTTON::NEW_GAME][3], { 1.0f,1.0f } };
 
-	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[5]);
-	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[5]);
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[IMAGE::NEW_GAME]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[IMAGE::NEW_GAME]);
 
-	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+	if(isTesting) gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
 }
-void Game::DrawButtonArrowUp2()
+void Game::DrawButtonIncreaseCols()
 {
-	TextureVertex tv0{ buttonPositions[BUTTON::ARROW_UP_2][0], { 0.0f,0.0f } };
-	TextureVertex tv1{ buttonPositions[BUTTON::ARROW_UP_2][1], { 1.0f,0.0f } };
-	TextureVertex tv2{ buttonPositions[BUTTON::ARROW_UP_2][2], { 0.0f,1.0f } };
-	TextureVertex tv3{ buttonPositions[BUTTON::ARROW_UP_2][3], { 1.0f,1.0f } };
+	TextureVertex tv0{ buttonPositions[BUTTON::INCREASE_COLS][0], { 0.0f,0.0f } };
+	TextureVertex tv1{ buttonPositions[BUTTON::INCREASE_COLS][1], { 1.0f,0.0f } };
+	TextureVertex tv2{ buttonPositions[BUTTON::INCREASE_COLS][2], { 0.0f,1.0f } };
+	TextureVertex tv3{ buttonPositions[BUTTON::INCREASE_COLS][3], { 1.0f,1.0f } };
 
-	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[BUTTON::ARROW_UP]);
-	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[BUTTON::ARROW_UP]);
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[IMAGE::TRIANGLE]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[IMAGE::TRIANGLE]);
 
-	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+	if (isTesting) gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
 }
-void Game::DrawButtonArrowDown2()
+void Game::DrawButtonDecreaseCols()
 {
-	TextureVertex tv0{ buttonPositions[BUTTON::ARROW_DOWN_2][0], { 0.0f,1.0f } };
-	TextureVertex tv1{ buttonPositions[BUTTON::ARROW_DOWN_2][1], { 1.0f,1.0f } };
-	TextureVertex tv2{ buttonPositions[BUTTON::ARROW_DOWN_2][2], { 0.0f,0.0f } };
-	TextureVertex tv3{ buttonPositions[BUTTON::ARROW_DOWN_2][3], { 1.0f,0.0f } };
+	TextureVertex tv0{ buttonPositions[BUTTON::DECREASE_COLS][0], { 0.0f,1.0f } };
+	TextureVertex tv1{ buttonPositions[BUTTON::DECREASE_COLS][1], { 1.0f,1.0f } };
+	TextureVertex tv2{ buttonPositions[BUTTON::DECREASE_COLS][2], { 0.0f,0.0f } };
+	TextureVertex tv3{ buttonPositions[BUTTON::DECREASE_COLS][3], { 1.0f,0.0f } };
 
-	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[BUTTON::ARROW_UP]);
-	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[BUTTON::ARROW_UP]);
+	gfx.DrawTriangleTex(tv0, tv1, tv2, buttonImages[IMAGE::TRIANGLE]);
+	gfx.DrawTriangleTex(tv1, tv3, tv2, buttonImages[IMAGE::TRIANGLE]);
 
-	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+	if (isTesting) gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
 }
 
 void Game::DrawDigit(const std::array<Math::Vector, 4>& POSITION, const int& number)
@@ -1152,7 +1208,43 @@ void Game::DrawDigit(const std::array<Math::Vector, 4>& POSITION, const int& num
 	gfx.DrawTriangleTex(tv0, tv1, tv2, digitImages[number]);
 	gfx.DrawTriangleTex(tv1, tv3, tv2, digitImages[number]);
 
-	gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+	if (isTesting) gfx.DrawRectangle(false, tv0.pos, tv3.pos, Red);
+}
+
+void Game::DrawSymbolRows()
+{
+	const float L = 575.0f;
+	const float R = L + 50.0f;
+	const float T = 150.0f;
+	const float B = T + 50.0f;
+
+	const TextureVertex LT{ {L,T}, { 0.0f,0.0f } };
+	const TextureVertex RT{ {R,T}, { 1.0f,0.0f } };
+	const TextureVertex LB{ {L,B}, { 0.0f,1.0f } };
+	const TextureVertex RB{ {R,B}, { 1.0f,1.0f } };
+
+	gfx.DrawTriangleTex(LT, RT, RB, symbolImages[0]);
+	gfx.DrawTriangleTex(LT, RB, LB, symbolImages[0]);
+	 
+	if (isTesting) gfx.DrawRectangle(false, LT.pos, RB.pos, Red);
+}
+
+void Game::DrawSymbolCols()
+{
+	const float L = 625.0f;
+	const float R = L + 50.0f;
+	const float T = 150.0f;
+	const float B = T + 50.0f;
+
+	const TextureVertex LT{ {L,T}, { 0.0f,0.0f } };
+	const TextureVertex RT{ {R,T}, { 1.0f,0.0f } };
+	const TextureVertex LB{ {L,B}, { 0.0f,1.0f } };
+	const TextureVertex RB{ {R,B}, { 1.0f,1.0f } };
+
+	gfx.DrawTriangleTex(LT, RT, RB, symbolImages[1]);
+	gfx.DrawTriangleTex(LT, RB, LB, symbolImages[1]);
+
+	if (isTesting) gfx.DrawRectangle(false, LT.pos, RB.pos, Red);
 }
 
 void Game::DrawTiles()
