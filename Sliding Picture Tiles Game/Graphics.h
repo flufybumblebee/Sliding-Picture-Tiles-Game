@@ -255,8 +255,8 @@ private:
 	Color*	                                            pSysBuffer;
 
 public:
-	static constexpr int WINDOW_WIDTH = 700;
-	static constexpr int WINDOW_HEIGHT = 500;
+	static constexpr int WINDOW_WIDTH = 2560/3;
+	static constexpr int WINDOW_HEIGHT = 1440/3;
 	static constexpr int WINDOW_LEFT = 0;
 	static constexpr int WINDOW_TOP = 0;
 	static constexpr int WINDOW_RIGHT = WINDOW_WIDTH - 1;

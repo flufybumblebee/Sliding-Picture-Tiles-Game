@@ -141,11 +141,11 @@ public:
 
 	void ReadDirectory(const std::wstring& FILENAME, std::vector<std::wstring>& v);
 
-	void SetBackgroundImages();
-	void SetButtonImages();
-	void SetTileImages();
-	void SetDigitImages();
-	void SetSymbolImages();
+	void SetImageBackgrounds();
+	void SetImageButtons();
+	void SetImageTiles();
+	void SetImageDigits();
+	void SetImageSymbols();
 
 	void SetDigitPositions();
 	void SetButtonPositions();
@@ -198,14 +198,18 @@ TO DO (BUGS):
 keyboard can't access access settings
 
 TO DO (FEATURES):
+mute volume
+select tile image
+select background
 move counter
 timer (start when first tile moved, stops when all tiles in correct possitions)
-select the number of tiles
 select the number of tile shuffles
+full screen
+resize window
 
 TO DO (SPECIAL FEATURES):
-be able to add custom tile images DONE!
-save/load game
+profiles
+save/load game (is this needed?)
 controller support
 auto solver
 convert tiles to greyscale that are in the wrong place
@@ -220,5 +224,5 @@ audio for buttons (presses, cursor over)
 audio for rows and column counters
 audio move counter
 color blind options
-larger fonts options
+larger fonts & icons options
 */

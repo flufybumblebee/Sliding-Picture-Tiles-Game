@@ -49,11 +49,11 @@ Game::Game(MainWindow& wnd)
 	controlState = ControlState::Mouse; // default = mouse
 	gameState = GameState::Setup; // default = Setup
 
-	SetBackgroundImages();
-	SetButtonImages();
-	SetDigitImages();
-	SetSymbolImages();
-	SetTileImages();
+	SetImageBackgrounds();
+	SetImageButtons();
+	SetImageDigits();
+	SetImageSymbols();
+	SetImageTiles();
 
 	RandomiseTileImage();
 
@@ -589,8 +589,7 @@ void Game::ReadDirectory(const std::wstring& FILENAME, std::vector<std::wstring>
 	*/
 }
 
-
-void Game::SetButtonImages()
+void Game::SetImageButtons()
 {
 	buttonImages.push_back(Surface::FromFile(L"Images\\Buttons\\Settings.png"));
 	buttonImages.push_back(Surface::FromFile(L"Images\\Buttons\\Mouse.png"));
@@ -599,7 +598,7 @@ void Game::SetButtonImages()
 	buttonImages.push_back(Surface::FromFile(L"Images\\Buttons\\Triangle.png"));
 	buttonImages.push_back(Surface::FromFile(L"Images\\Buttons\\NewGame.png"));
 }
-void Game::SetTileImages()
+void Game::SetImageTiles()
 {
 	const wstring FOLDER_NAME = L"C:\\Users\\Bumble\\source\\repos\\Sliding Picture Tiles Game\\Sliding Picture Tiles Game\\Images\\Tiles";
 	std::vector<wstring> v;
@@ -616,7 +615,7 @@ void Game::SetTileImages()
 	tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\squirrel.jpg"));
 	tileImages.push_back(Surface::FromFile(L"Images\\Tiles\\pretty.jpg"));*/
 }
-void Game::SetDigitImages()
+void Game::SetImageDigits()
 {
 	digitImages.push_back(Surface::FromFile(L"Images\\Digits\\digit_0.png"));
 	digitImages.push_back(Surface::FromFile(L"Images\\Digits\\digit_1.png"));
@@ -629,12 +628,12 @@ void Game::SetDigitImages()
 	digitImages.push_back(Surface::FromFile(L"Images\\Digits\\digit_8.png"));
 	digitImages.push_back(Surface::FromFile(L"Images\\Digits\\digit_9.png"));
 }
-void Game::SetSymbolImages()
+void Game::SetImageSymbols()
 {
 	symbolImages.push_back(Surface::FromFile(L"Images\\Symbols\\Rows.png"));
 	symbolImages.push_back(Surface::FromFile(L"Images\\Symbols\\Cols.png"));
 }
-void Game::SetBackgroundImages()
+void Game::SetImageBackgrounds()
 {
 	backgroundImages.push_back(Surface::FromFile(L"Images\\Backgrounds\\woven.jpg"));
 	backgroundImages.push_back(Surface::FromFile(L"Images\\Backgrounds\\swirl.jpg"));
@@ -706,10 +705,10 @@ void Game::SetButtonPositions()
 		buttonPositions.push_back({ LT, RT ,LB ,RB });
 	}
 
-	// ArrowUp Button
+	// Increase Rows Button
 	{
-		const float L = 575.0f;
-		const float R = L + 50.0f;
+		const float R = Graphics::WINDOW_RIGHT - 25.0f - 50.0f;
+		const float L = R - 50.0f;
 		const float T = 200.0f;
 		const float B = T + 50.0f;
 
@@ -721,10 +720,10 @@ void Game::SetButtonPositions()
 		buttonPositions.push_back({ LT, RT ,LB ,RB });
 	}
 
-	// ArrowDown Button
+	// Decrease Rows Button
 	{
-		const float L = 575.0f;
-		const float R = L + 50.0f;
+		const float R = Graphics::WINDOW_RIGHT - 25.0f - 50.0f;
+		const float L = R - 50.0f;
 		const float T = 300.0f;
 		const float B = T + 50.0f;
 
@@ -751,10 +750,10 @@ void Game::SetButtonPositions()
 		buttonPositions.push_back({ LT, RT ,LB ,RB });
 	}
 
-	// ArrowUp2 Button
+	// Increase Cols Button
 	{
-		const float L = 625.0f;
-		const float R = L + 50.0f;
+		const float R = Graphics::WINDOW_RIGHT - 25.0f;
+		const float L = R - 50.0f;
 		const float T = 200.0f;
 		const float B = T + 50.0f;
 
@@ -766,10 +765,10 @@ void Game::SetButtonPositions()
 		buttonPositions.push_back({ LT, RT ,LB ,RB });
 	}
 
-	// ArrowDown2 Button
+	// Decrease Cols Button
 	{
-		const float L = 625.0f;
-		const float R = L + 50.0f;
+		const float R = Graphics::WINDOW_RIGHT - 25.0f;
+		const float L = R - 50.0f;
 		const float T = 300.0f;
 		const float B = T + 50.0f;
 
@@ -863,8 +862,10 @@ void Game::SetTilePositions()
 void Game::SetDigitPositions()
 {	
 	{
-		const float L = 575.0f;
-		const float R = L + 50.0f;
+		// Digit Rows
+
+		const float R = Graphics::WINDOW_RIGHT - 25.0f - 50.0f;
+		const float L = R - 50.0f;
 		const float T = 250.0f;
 		const float B = T + 50.0f;
 
@@ -877,8 +878,10 @@ void Game::SetDigitPositions()
 	}
 
 	{
-		const float L = 625.0f;
-		const float R = L + 50.0f;
+		// Digit Cols
+
+		const float R = Graphics::WINDOW_RIGHT - 25.0f;
+		const float L = R - 50.0f;
 		const float T = 250.0f;
 		const float B = T + 50.0f;
 
@@ -1213,8 +1216,8 @@ void Game::DrawDigit(const std::array<Math::Vector, 4>& POSITION, const int& num
 
 void Game::DrawSymbolRows()
 {
-	const float L = 575.0f;
-	const float R = L + 50.0f;
+	const float R = Graphics::WINDOW_RIGHT - 25.0f - 50.0f;
+	const float L = R - 50.0f;
 	const float T = 150.0f;
 	const float B = T + 50.0f;
 
@@ -1228,11 +1231,10 @@ void Game::DrawSymbolRows()
 	 
 	if (isTesting) gfx.DrawRectangle(false, LT.pos, RB.pos, Red);
 }
-
 void Game::DrawSymbolCols()
 {
-	const float L = 625.0f;
-	const float R = L + 50.0f;
+	const float R = Graphics::WINDOW_RIGHT - 25.0f;
+	const float L = R - 50.0f;
 	const float T = 150.0f;
 	const float B = T + 50.0f;
 
